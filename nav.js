@@ -6,7 +6,8 @@
 
   function updateHeaderScrolled() {
     var y = window.scrollY || document.documentElement.scrollTop || 0;
-    topBar.classList.toggle("top-bar--scrolled", y > scrollThreshold);
+    var innerPage = document.body.classList.contains("page--inner");
+    topBar.classList.toggle("top-bar--scrolled", innerPage && y > scrollThreshold);
   }
 
   updateHeaderScrolled();

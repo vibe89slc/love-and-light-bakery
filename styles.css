@@ -102,8 +102,13 @@ body.is-push-stage {
     box-shadow 0.35s var(--ease-out);
 }
 
-.top-bar--scrolled,
-.top-bar--open {
+/* Solid bar only on inner pages (home/index stays transparent over the hero). */
+.top-bar--scrolled {
+  background-color: #fff;
+  box-shadow: 0 1px 0 rgba(44, 36, 32, 0.07);
+}
+
+body.page--inner .top-bar--open {
   background-color: #fff;
   box-shadow: 0 1px 0 rgba(44, 36, 32, 0.07);
 }

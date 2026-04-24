@@ -17,6 +17,8 @@
   const SCROLL_STRETCH = 1.82;
   /** Wheel delta dampening (higher = less physical scrolling to move). */
   const WHEEL_MULTIPLIER = 0.52;
+  /** Touch drag scaling (same cap model as wheel; phones feel better slightly higher). */
+  const TOUCH_MULTIPLIER = 0.58;
   /** currentY → targetY lerp (softer = smoother page motion). */
   const SMOOTH_EASE = 0.056;
   const SMOOTH_EASE_MID = 0.074;
@@ -47,12 +49,12 @@
   let wheelGestureAnchor = null;
   /** Accumulated wheel delta (after WHEEL_MULTIPLIER) for the current burst, capped to ±one chapter. */
   let wheelAccumScaled = 0;
-  /** Touch: follow native scroll during swipe, then snap one chapter from start anchor. */
+  /** Touch: drive chapter scroll like wheel (preventDefault + capped delta); avoids native momentum fighting JS. */
   let touchLastClientY = null;
   let touchGestureAnchor = null;
   let touchIntentSum = 0;
-  const TOUCH_MIN_SWIPE_PX = 18;
-  const TOUCH_SNAP_INTENT = 120;
+  let touchAccumScaled = 0;
+  let touchChapterDriving = false;
   /** Chapter px to ease toward (null = user drives targetY only). */
   let pendingSnapY = null;
 
@@ -240,28 +242,27 @@
 
   function setScrollMetrics() {
     body.style.setProperty("--slide-count", String(slideCount));
-    if (!prefersReduced) {
-      body.classList.add("is-push-stage");
-      const vh = window.innerHeight;
-      const segmentPx = vh * SCROLL_STRETCH;
-      const totalPx = numTrans * segmentPx + vh;
-      body.style.minHeight = `${totalPx}px`;
-    } else {
+    if (prefersReduced) {
       body.classList.remove("is-push-stage");
       body.style.minHeight = "";
+      return;
     }
+    body.classList.add("is-push-stage");
+    const vh = window.innerHeight;
+    const segmentPx = vh * SCROLL_STRETCH;
+    const totalPx = numTrans * segmentPx + vh;
+    body.style.minHeight = `${totalPx}px`;
   }
 
   function update() {
+    if (prefersReduced) {
+      return;
+    }
     const vh = window.innerHeight;
     const vw = window.innerWidth;
     const scrollY = window.scrollY;
     const maxScroll = Math.max(1, getMaxScroll());
     const segmentHeight = vh * SCROLL_STRETCH;
-
-    if (prefersReduced) {
-      return;
-    }
 
     const raw = scrollY / Math.max(1e-6, segmentHeight);
     const dir = function (seg) {
@@ -411,6 +412,8 @@
     touchLastClientY = null;
     touchGestureAnchor = null;
     touchIntentSum = 0;
+    touchAccumScaled = 0;
+    touchChapterDriving = false;
   }
 
   function touchShouldUseChapterScroll(e) {
@@ -425,22 +428,8 @@
     return true;
   }
 
-  function finishTouchGesture() {
-    if (touchGestureAnchor === null) return;
-    const anchorForSnap = touchGestureAnchor;
-    const dir = touchIntentSum >= 0 ? 1 : -1;
-    resetTouchGesture();
-    lastWheelTime = performance.now();
-    requestChapterSnap(window.scrollY, dir * TOUCH_SNAP_INTENT, anchorForSnap);
-  }
-
   function syncScrollFromNative() {
-    if (prefersReduced) return;
-    if (touchGestureAnchor !== null) {
-      const y = window.scrollY;
-      pendingSnapY = null;
-      currentY = y;
-      targetY = y;
+    if (touchChapterDriving) {
       return;
     }
     if (pendingSnapY !== null) {
@@ -466,28 +455,29 @@
   }
 
   function frame() {
-    if (!prefersReduced) {
-      const max = getMaxScroll();
-      if (pendingSnapY !== null) {
-        pendingSnapY = clamp(pendingSnapY, 0, max);
-        targetY += (pendingSnapY - targetY) * SNAP_TARGET_EASE;
-        if (Math.abs(pendingSnapY - targetY) < 0.55) {
-          targetY = pendingSnapY;
-          pendingSnapY = null;
-        }
+    if (prefersReduced) {
+      return;
+    }
+    const max = getMaxScroll();
+    if (pendingSnapY !== null) {
+      pendingSnapY = clamp(pendingSnapY, 0, max);
+      targetY += (pendingSnapY - targetY) * SNAP_TARGET_EASE;
+      if (Math.abs(pendingSnapY - targetY) < 0.55) {
+        targetY = pendingSnapY;
+        pendingSnapY = null;
       }
-      targetY = clamp(targetY, 0, max);
-      const dist = Math.abs(targetY - currentY);
-      const ease = dist > 110 ? SMOOTH_EASE_FAR : dist > 48 ? SMOOTH_EASE_MID : SMOOTH_EASE;
-      currentY += (targetY - currentY) * ease;
-      if (Math.abs(targetY - currentY) < SCROLL_EPS) {
-        currentY = targetY;
-      }
-      if (Math.abs(window.scrollY - currentY) > 0.35) {
-        scrollSyncLock = true;
-        window.scrollTo(0, currentY);
-        scrollSyncLock = false;
-      }
+    }
+    targetY = clamp(targetY, 0, max);
+    const dist = Math.abs(targetY - currentY);
+    const ease = dist > 110 ? SMOOTH_EASE_FAR : dist > 48 ? SMOOTH_EASE_MID : SMOOTH_EASE;
+    currentY += (targetY - currentY) * ease;
+    if (Math.abs(targetY - currentY) < SCROLL_EPS) {
+      currentY = targetY;
+    }
+    if (Math.abs(window.scrollY - currentY) > 0.35) {
+      scrollSyncLock = true;
+      window.scrollTo(0, currentY);
+      scrollSyncLock = false;
     }
     update();
     window.requestAnimationFrame(frame);
@@ -498,13 +488,11 @@
 
   window.addEventListener("resize", function () {
     setScrollMetrics();
-    if (!prefersReduced) {
-      const max = getMaxScroll();
-      targetY = clamp(targetY, 0, max);
-      currentY = clamp(currentY, 0, max);
-      window.scrollTo(0, currentY);
-      forceChapterSnap(window.scrollY);
-    }
+    const max = getMaxScroll();
+    targetY = clamp(targetY, 0, max);
+    currentY = clamp(currentY, 0, max);
+    window.scrollTo(0, currentY);
+    forceChapterSnap(window.scrollY);
     update();
   });
 
@@ -557,9 +545,11 @@
       }
       pendingSnapY = null;
       lastWheelTime = performance.now();
+      touchChapterDriving = true;
       touchLastClientY = e.touches[0].clientY;
       touchGestureAnchor = currentY;
       touchIntentSum = 0;
+      touchAccumScaled = 0;
     },
     { passive: true }
   );
@@ -567,31 +557,41 @@
   window.addEventListener(
     "touchmove",
     function (e) {
-      if (touchGestureAnchor === null || e.touches.length !== 1) {
+      if (!touchChapterDriving || touchGestureAnchor === null || e.touches.length !== 1) {
         return;
       }
+      if (!touchShouldUseChapterScroll(e)) {
+        resetTouchGesture();
+        return;
+      }
+      e.preventDefault();
+      lastWheelTime = performance.now();
+      pendingSnapY = null;
       const y = e.touches[0].clientY;
       const dy = touchLastClientY - y;
       touchLastClientY = y;
-      if (Math.abs(dy) > 0.25) {
-        lastWheelTime = performance.now();
-        touchIntentSum += dy;
-      }
+      touchIntentSum += dy;
+
+      const step = chapterStepPx();
+      const max = getMaxScroll();
+      touchAccumScaled += dy * TOUCH_MULTIPLIER;
+      const capped = clamp(touchAccumScaled, -step, step);
+      targetY = clamp(touchGestureAnchor + capped, 0, max);
     },
-    { passive: true }
+    { passive: false }
   );
 
   window.addEventListener(
     "touchend",
     function () {
-      if (touchGestureAnchor === null) {
+      if (!touchChapterDriving || touchGestureAnchor === null) {
         return;
       }
-      if (Math.abs(touchIntentSum) < TOUCH_MIN_SWIPE_PX) {
-        resetTouchGesture();
-        return;
-      }
-      finishTouchGesture();
+      const intent = touchIntentSum;
+      const anchorForSnap = touchGestureAnchor;
+      resetTouchGesture();
+      lastWheelTime = performance.now();
+      requestChapterSnap(targetY, intent, anchorForSnap);
     },
     { passive: true }
   );
