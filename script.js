@@ -12,6 +12,19 @@
 
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  /** Viewport heights of scroll per push→fade chapter (higher = slower, harder to skip). */
+  const SCROLL_STRETCH = 2.75;
+  /** Wheel delta dampening (lower = more scroll gesture per pixel moved). */
+  const WHEEL_MULTIPLIER = 0.38;
+  /** Scroll position lerps toward target each frame (lower = silkier, slower catch-up). */
+  const SMOOTH_EASE = 0.082;
+  /** Ignore tiny differences at rest. */
+  const SCROLL_EPS = 0.45;
+
+  let targetY = 0;
+  let currentY = 0;
+  let scrollSyncLock = false;
+
   function clamp(n, min, max) {
     return Math.min(max, Math.max(min, n));
   }
@@ -25,11 +38,18 @@
     return x * x * (3 - 2 * x);
   }
 
+  function getMaxScroll() {
+    return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  }
+
   function setScrollMetrics() {
     body.style.setProperty("--slide-count", String(slideCount));
     if (!prefersReduced) {
       body.classList.add("is-push-stage");
-      body.style.minHeight = `${slideCount * 100}vh`;
+      const vh = window.innerHeight;
+      const segmentPx = vh * SCROLL_STRETCH;
+      const totalPx = numTrans * segmentPx + vh;
+      body.style.minHeight = `${totalPx}px`;
     } else {
       body.classList.remove("is-push-stage");
       body.style.minHeight = "";
@@ -40,20 +60,14 @@
     const vh = window.innerHeight;
     const vw = window.innerWidth;
     const scrollY = window.scrollY;
-    const maxScroll = Math.max(1, document.documentElement.scrollHeight - vh);
+    const maxScroll = Math.max(1, getMaxScroll());
+    const segmentHeight = vh * SCROLL_STRETCH;
 
     if (prefersReduced) {
-      slides.forEach(function (slide) {
-        slide.style.cssText = "";
-        const inner = slide.querySelector(".panel__inner");
-        if (inner) inner.style.cssText = "";
-      });
-      donut.style.removeProperty("--donut-x");
-      donut.style.removeProperty("--donut-rot");
       return;
     }
 
-    const raw = scrollY / vh;
+    const raw = scrollY / Math.max(1e-6, segmentHeight);
     const dir = function (seg) {
       return seg % 2 === 0 ? -1 : 1;
     };
@@ -180,22 +194,69 @@
     }
   }
 
-  let ticking = false;
-  function onScroll() {
-    if (!ticking) {
-      window.requestAnimationFrame(function () {
-        update();
-        ticking = false;
-      });
-      ticking = true;
+  function syncScrollFromNative() {
+    if (prefersReduced) return;
+    const y = window.scrollY;
+    if (Math.abs(y - currentY) > 14) {
+      currentY = y;
+      targetY = y;
     }
   }
 
+  function frame() {
+    if (!prefersReduced) {
+      const max = getMaxScroll();
+      targetY = clamp(targetY, 0, max);
+      currentY += (targetY - currentY) * SMOOTH_EASE;
+      if (Math.abs(targetY - currentY) < SCROLL_EPS) {
+        currentY = targetY;
+      }
+      if (Math.abs(window.scrollY - currentY) > 0.35) {
+        scrollSyncLock = true;
+        window.scrollTo(0, currentY);
+        scrollSyncLock = false;
+      }
+    }
+    update();
+    window.requestAnimationFrame(frame);
+  }
+
   setScrollMetrics();
-  window.addEventListener("scroll", onScroll, { passive: true });
+  targetY = currentY = window.scrollY;
+
   window.addEventListener("resize", function () {
     setScrollMetrics();
+    if (!prefersReduced) {
+      const max = getMaxScroll();
+      targetY = clamp(targetY, 0, max);
+      currentY = clamp(currentY, 0, max);
+      window.scrollTo(0, currentY);
+    }
     update();
   });
-  update();
+
+  if (prefersReduced) {
+    return;
+  }
+
+  window.addEventListener(
+    "wheel",
+    function (e) {
+      e.preventDefault();
+      const max = getMaxScroll();
+      targetY = clamp(targetY + e.deltaY * WHEEL_MULTIPLIER, 0, max);
+    },
+    { passive: false }
+  );
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (scrollSyncLock) return;
+      syncScrollFromNative();
+    },
+    { passive: true }
+  );
+
+  window.requestAnimationFrame(frame);
 })();
