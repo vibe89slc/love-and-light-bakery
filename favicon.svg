@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <radialGradient id="favDough" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#f5d4a8" />
+      <stop offset="55%" stop-color="#e8a86a" />
+      <stop offset="100%" stop-color="#c97b3c" />
+    </radialGradient>
+    <radialGradient id="favIcing" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ffe8f4" />
+      <stop offset="45%" stop-color="#f8b8d9" />
+      <stop offset="100%" stop-color="#e89bc4" />
+    </radialGradient>
+    <mask id="favHole" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+      <rect width="200" height="200" fill="white" />
+      <circle cx="100" cy="100" r="23" fill="black" />
+    </mask>
+  </defs>
+  <g mask="url(#favHole)">
+    <circle cx="100" cy="100" r="72" fill="url(#favDough)" />
+    <circle cx="100" cy="100" r="65" fill="url(#favIcing)" />
+    <g>
+      <rect x="138" y="78" width="11" height="3.2" rx="1.6" fill="#fff59a" transform="rotate(18 138 78)" />
+      <rect x="52" y="82" width="10" height="3" rx="1.5" fill="#a8e6cf" transform="rotate(-42 52 82)" />
+      <rect x="124" y="118" width="10" height="3" rx="1.5" fill="#c4b5fd" transform="rotate(48 124 118)" />
+      <rect x="72" y="128" width="11" height="3.2" rx="1.6" fill="#fdba74" transform="rotate(-8 72 128)" />
+      <rect x="96" y="58" width="10" height="3" rx="1.5" fill="#93c5fd" transform="rotate(72 96 58)" />
+      <rect x="152" y="96" width="9" height="2.8" rx="1.4" fill="#f9a8d4" transform="rotate(-22 152 96)" />
+      <rect x="44" y="108" width="10" height="3" rx="1.5" fill="#fde68a" transform="rotate(35 44 108)" />
+      <rect x="108" y="138" width="10" height="3" rx="1.5" fill="#86efac" transform="rotate(-55 108 138)" />
+      <rect x="130" y="64" width="9" height="2.8" rx="1.4" fill="#c4b5fd" transform="rotate(102 130 64)" />
+      <rect x="78" y="70" width="10" height="3" rx="1.5" fill="#fdba74" transform="rotate(-28 78 70)" />
+      <rect x="58" y="118" width="11" height="3.2" rx="1.6" fill="#93c5fd" transform="rotate(12 58 118)" />
+      <rect x="146" y="118" width="10" height="3" rx="1.5" fill="#fff59a" transform="rotate(-65 146 118)" />
+      <rect x="76" y="84" width="9" height="2.8" rx="1.4" fill="#fca5a5" transform="rotate(40 76 84)" />
+      <rect x="124" y="90" width="10" height="3" rx="1.5" fill="#a8e6cf" transform="rotate(-18 124 90)" />
+      <rect x="68" y="96" width="9" height="2.8" rx="1.4" fill="#fde68a" transform="rotate(88 68 96)" />
+      <rect x="118" y="122" width="10" height="3" rx="1.5" fill="#f9a8d4" transform="rotate(62 118 122)" />
+      <circle cx="142" cy="88" r="2.2" fill="#fff59a" />
+      <circle cx="54" cy="72" r="2" fill="#93c5fd" />
+      <circle cx="92" cy="132" r="2.1" fill="#c4b5fd" />
+      <circle cx="128" cy="132" r="2" fill="#86efac" />
+      <circle cx="104" cy="72" r="2.2" fill="#fdba74" />
+      <circle cx="62" cy="96" r="1.9" fill="#f9a8d4" />
+      <circle cx="136" cy="108" r="2" fill="#fde68a" />
+      <circle cx="74" cy="118" r="2.1" fill="#fff59a" />
+    </g>
+  </g>
+</svg>
