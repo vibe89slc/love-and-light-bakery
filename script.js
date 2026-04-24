@@ -24,6 +24,10 @@
   let targetY = 0;
   let currentY = 0;
   let scrollSyncLock = false;
+  /** After the donut push, incoming copy fades by time — not by scroll position. */
+  let fadePhaseKey = null;
+  let fadeStartedAt = 0;
+  const TEXT_FADE_MS = 960;
 
   function clamp(n, min, max) {
     return Math.min(max, Math.max(min, n));
@@ -73,6 +77,7 @@
     };
 
     if (raw >= numTrans) {
+      fadePhaseKey = null;
       slides.forEach(function (slide, k) {
         const inner = slide.querySelector(".panel__inner");
         slide.style.zIndex = k === slideCount - 1 ? "8" : "2";
@@ -107,11 +112,22 @@
     const seg = Math.floor(raw);
     const u = raw - seg;
     const pushT = clamp(u / 0.5, 0, 1);
-    const fadeT = clamp((u - 0.5) / 0.5, 0, 1);
     const pushE = smoothStep(pushT);
-    const fadeE = smoothStep(fadeT);
     const pushPx = vw * 0.78 + 140;
     const d = dir(seg);
+
+    let fadeIn = 0;
+    if (u < 0.5) {
+      fadePhaseKey = null;
+    } else {
+      const key = String(seg);
+      if (fadePhaseKey !== key) {
+        fadePhaseKey = key;
+        fadeStartedAt = performance.now();
+      }
+      const fadeT = clamp((performance.now() - fadeStartedAt) / TEXT_FADE_MS, 0, 1);
+      fadeIn = smoothStep(fadeT);
+    }
 
     slides.forEach(function (slide, k) {
       const inner = slide.querySelector(".panel__inner");
@@ -148,9 +164,10 @@
         } else {
           slide.style.zIndex = "9";
           slide.style.opacity = "1";
-          slide.style.pointerEvents = fadeE > 0.08 ? "auto" : "none";
-          inner.style.transform = "translate3d(0, 0, 0)";
-          inner.style.opacity = String(fadeE);
+          slide.style.pointerEvents = fadeIn > 0.12 ? "auto" : "none";
+          const lift = (1 - fadeIn) * 14;
+          inner.style.transform = `translate3d(0, ${lift}px, 0)`;
+          inner.style.opacity = String(fadeIn);
         }
       } else {
         slide.style.zIndex = "2";
