@@ -394,6 +394,45 @@ body.is-push-stage {
   border-color: var(--ink);
 }
 
+.panel__inner p a:not([class]) {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: rgba(193, 123, 110, 0.45);
+  text-underline-offset: 0.18em;
+}
+
+.panel__inner p a:not([class]):hover {
+  color: var(--ink);
+  text-decoration-color: var(--ink);
+}
+
+.menu-board__note a {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: rgba(193, 123, 110, 0.45);
+  text-underline-offset: 0.18em;
+}
+
+.menu-board__note a:hover {
+  color: var(--ink);
+  text-decoration-color: var(--ink);
+}
+
+.page-section p a:not(.cta) {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: rgba(193, 123, 110, 0.45);
+  text-underline-offset: 0.18em;
+}
+
+.page-section p a:not(.cta):hover {
+  color: var(--ink);
+  text-decoration-color: var(--ink);
+}
+
 .hours {
   padding: 1rem 0 0.25rem;
   margin-bottom: 1rem !important;
@@ -440,6 +479,114 @@ body.is-push-stage {
 .cta--button:hover {
   color: var(--cream) !important;
   background: #3d332e;
+}
+
+/* Playful “coming soon” chip (replaces online order link until Square is live) */
+.cta-soon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  padding: 0.65rem 1.35rem 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    125deg,
+    #fff0f7 0%,
+    #f3e8ff 38%,
+    #fff4e0 72%,
+    #ffe8f4 100%
+  );
+  background-size: 220% 220%;
+  animation: cta-soon-gradient 9s ease-in-out infinite;
+  border: 2px dashed rgba(193, 123, 110, 0.55);
+  box-shadow:
+    0 8px 28px rgba(232, 155, 196, 0.22),
+    0 2px 0 rgba(255, 255, 255, 0.65) inset;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+  line-height: 1.25;
+  color: var(--ink);
+  transform: rotate(-1.25deg);
+  position: relative;
+  isolation: isolate;
+}
+
+.cta-soon::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: radial-gradient(circle at 18% 22%, rgba(255, 230, 150, 0.55) 0%, transparent 42%),
+    radial-gradient(circle at 82% 78%, rgba(167, 230, 200, 0.4) 0%, transparent 38%);
+  z-index: -1;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.cta-soon__main {
+  letter-spacing: -0.02em;
+}
+
+.cta-soon__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #3d2f2a 0%, var(--ink) 100%);
+  color: #fff8f2;
+  font-family: "Outfit", system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transform: rotate(2deg);
+  box-shadow: 0 3px 10px rgba(44, 36, 32, 0.2);
+  animation: cta-soon-badge 2.8s ease-in-out infinite;
+}
+
+.cta-soon__spark {
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.92;
+  animation: cta-soon-spark 2.2s ease-in-out infinite;
+}
+
+.cta-soon__spark:last-of-type {
+  animation-delay: 0.5s;
+}
+
+@keyframes cta-soon-gradient {
+  0%,
+  100% {
+    background-position: 0% 40%;
+  }
+  50% {
+    background-position: 100% 60%;
+  }
+}
+
+@keyframes cta-soon-badge {
+  0%,
+  100% {
+    transform: rotate(2deg) translateY(0);
+  }
+  50% {
+    transform: rotate(1deg) translateY(-2px);
+  }
+}
+
+@keyframes cta-soon-spark {
+  0%,
+  100% {
+    transform: scale(1) rotate(-6deg);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.12) rotate(6deg);
+    opacity: 1;
+  }
 }
 
 .cta--ghost {
@@ -830,6 +977,54 @@ h2 {
   font-weight: 600;
 }
 
+.site-nav__social {
+  flex-shrink: 0;
+}
+
+.social-icons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.social-icons--footer {
+  margin: 0 0 1rem;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.social-icons__link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 14px rgba(44, 36, 32, 0.1);
+  transition: transform 0.22s var(--ease-out), box-shadow 0.22s ease;
+}
+
+.social-icons__link:hover {
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 8px 22px rgba(44, 36, 32, 0.14);
+}
+
+.social-icons__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.social-icons__img {
+  display: block;
+  width: 1.4rem;
+  height: 1.4rem;
+  object-fit: contain;
+}
+
 @media (max-width: 899px) {
   .top-bar__shell {
     flex: 1 1 auto;
@@ -932,6 +1127,22 @@ h2 {
   .site-nav--open .site-nav__list li:nth-child(5) .site-nav__link {
     transition-delay: 0.25s;
   }
+
+  .site-nav__social {
+    margin-top: 1.25rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid rgba(44, 36, 32, 0.1);
+  }
+
+  .site-nav__social .social-icons__link {
+    width: 2.85rem;
+    height: 2.85rem;
+  }
+
+  .site-nav__social .social-icons__img {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
 }
 
 @media (min-width: 900px) {
@@ -959,11 +1170,35 @@ h2 {
   }
 
   .site-nav__panel {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem 1rem;
     padding: 0;
     background: none;
     box-shadow: none;
     border-radius: 0;
     transform: none !important;
+  }
+
+  .site-nav__social {
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .site-nav__social .social-icons__link {
+    width: 2.2rem;
+    height: 2.2rem;
+    background: rgba(255, 255, 255, 0.55);
+    box-shadow: 0 2px 10px rgba(44, 36, 32, 0.08);
+  }
+
+  .site-nav__social .social-icons__img {
+    width: 1.12rem;
+    height: 1.12rem;
   }
 
   .site-nav__list {
@@ -1147,6 +1382,22 @@ body.page--inner {
 @media (prefers-reduced-motion: reduce) {
   .top-bar {
     transition: none;
+  }
+
+  .cta-soon,
+  .cta-soon__badge,
+  .cta-soon__spark {
+    animation: none !important;
+  }
+
+  .cta-soon {
+    transform: none;
+    background-position: 0 0;
+    background-size: 100% 100%;
+  }
+
+  .cta-soon__badge {
+    transform: none;
   }
 
   .nav-bun,

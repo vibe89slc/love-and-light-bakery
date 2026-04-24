@@ -46,7 +46,7 @@
     setOpen(!open);
   });
 
-  nav.querySelectorAll(".site-nav__link").forEach(function (a) {
+  nav.querySelectorAll("a[href]").forEach(function (a) {
     a.addEventListener("click", close);
   });
 
