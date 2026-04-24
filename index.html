@@ -28,7 +28,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body class="page--home">
   <div class="ambient" aria-hidden="true">
     <div class="ambient__orb ambient__orb--1"></div>
     <div class="ambient__orb ambient__orb--2"></div>
@@ -102,14 +102,19 @@
           </span>
         </span>
       </a>
-      <button type="button" class="nav-bun" id="nav-toggle" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu">
-        <span class="nav-bun__face" aria-hidden="true">
-          <span class="nav-bun__icing"></span>
-          <span class="nav-bun__seed nav-bun__seed--1"></span>
-          <span class="nav-bun__seed nav-bun__seed--2"></span>
-          <span class="nav-bun__seed nav-bun__seed--3"></span>
-        </span>
-      </button>
+      <div class="top-bar__nav-cluster">
+        <button type="button" class="nav-bun" id="nav-toggle" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu">
+          <span class="nav-bun__face" aria-hidden="true">
+            <span class="nav-bun__icing"></span>
+            <span class="nav-bun__seed nav-bun__seed--1"></span>
+            <span class="nav-bun__seed nav-bun__seed--2"></span>
+            <span class="nav-bun__seed nav-bun__seed--3"></span>
+          </span>
+        </button>
+        <div class="nav-hint" id="nav-hint" role="status" aria-live="polite">
+          <span class="nav-hint__label">click me</span>
+        </div>
+      </div>
     </div>
     <nav id="site-menu" class="site-nav" aria-label="Primary">
       <div class="site-nav__scrim" aria-hidden="true"></div>

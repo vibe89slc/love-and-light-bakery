@@ -66,6 +66,9 @@
   let touchChapterDriving = false;
   /** Chapter px to ease toward (null = user drives targetY only). */
   let pendingSnapY = null;
+  /** Mobile: donut center-x at right “peek”; avoid layout reads every scroll frame. */
+  let mobileDonutRightParkPx = null;
+  let mobileScrollVisualRaf = null;
 
   function clamp(n, min, max) {
     return Math.min(max, Math.max(min, n));
@@ -249,20 +252,31 @@
     scrollSyncLock = false;
   }
 
+  function recacheMobileDonutX() {
+    if (!mobileStackActive()) {
+      mobileDonutRightParkPx = null;
+      return;
+    }
+    mobileDonutRightParkPx = getDonutPeekBounds(window.innerWidth).rightPark;
+  }
+
   function setScrollMetrics() {
     body.style.setProperty("--slide-count", String(slideCount));
     if (prefersReduced) {
       body.classList.remove("is-push-stage");
       body.classList.remove("is-mobile-stack");
       body.style.minHeight = "";
+      mobileDonutRightParkPx = null;
       return;
     }
     if (mobileStackActive()) {
       body.classList.remove("is-push-stage");
       body.classList.add("is-mobile-stack");
       body.style.minHeight = "";
+      recacheMobileDonutX();
       return;
     }
+    mobileDonutRightParkPx = null;
     body.classList.remove("is-mobile-stack");
     body.classList.add("is-push-stage");
     const vh = window.innerHeight;
@@ -291,13 +305,16 @@
   }
 
   function updateMobileDonutFromScroll() {
+    if (mobileDonutRightParkPx == null) {
+      recacheMobileDonutX();
+    }
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const scrollY = window.scrollY;
     const maxScroll = Math.max(1, getMaxScroll());
-    const park = getDonutPeekBounds(vw);
-    const x = park.rightPark;
-    donut.style.setProperty("--donut-x", `${x}px`);
+    if (mobileDonutRightParkPx != null) {
+      donut.style.setProperty("--donut-x", `${mobileDonutRightParkPx}px`);
+    }
     donut.style.setProperty("--donut-rot", `${scrollY * MOBILE_SCROLL_ROT_PER_PX}deg`);
     if (orbs.length) {
       const p = clamp(scrollY / maxScroll, 0, 1);
@@ -306,6 +323,16 @@
       orbs[1].style.transform = `translate3d(${-drift * 0.5}px, ${p * vh * 0.05}px, 0)`;
       orbs[2].style.transform = `translate3d(${drift * 0.35}px, ${-p * vh * 0.02}px, 0)`;
     }
+  }
+
+  function scheduleMobileScrollVisuals() {
+    if (mobileScrollVisualRaf !== null) {
+      return;
+    }
+    mobileScrollVisualRaf = window.requestAnimationFrame(function () {
+      mobileScrollVisualRaf = null;
+      updateMobileDonutFromScroll();
+    });
   }
 
   function update() {
@@ -548,6 +575,7 @@
     }
     if (mobileStackActive()) {
       resetSlidesStacked();
+      recacheMobileDonutX();
       const maxM = getMaxScroll();
       scrollSyncLock = true;
       window.scrollTo(0, clamp(window.scrollY, 0, maxM));
@@ -575,7 +603,10 @@
 
   if (mobileStackActive()) {
     resetSlidesStacked();
-    updateMobileDonutFromScroll();
+    window.requestAnimationFrame(function () {
+      recacheMobileDonutX();
+      updateMobileDonutFromScroll();
+    });
   } else {
     window.requestAnimationFrame(frame);
   }
@@ -695,7 +726,7 @@
     function () {
       if (scrollSyncLock) return;
       if (mobileStackActive()) {
-        updateMobileDonutFromScroll();
+        scheduleMobileScrollVisuals();
         return;
       }
       syncScrollFromNative();
@@ -713,4 +744,18 @@
     },
     { passive: true }
   );
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener(
+      "resize",
+      function () {
+        if (prefersReduced || !mobileStackActive()) {
+          return;
+        }
+        recacheMobileDonutX();
+        scheduleMobileScrollVisuals();
+      },
+      { passive: true }
+    );
+  }
 })();
