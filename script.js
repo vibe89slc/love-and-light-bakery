@@ -76,6 +76,19 @@
     return best;
   }
 
+  /** Center-x when donut is parked left vs right; always leaves a slice on-screen. */
+  function getDonutPeekBounds(vw) {
+    const rect = donut.getBoundingClientRect();
+    let half = rect.width / 2;
+    if (half < 6) {
+      half = Math.min(vw * 0.27, 202);
+    }
+    const peek = Math.max(64, half * 0.38);
+    const leftPark = peek - half;
+    const rightPark = vw + half - peek;
+    return { leftPark, rightPark };
+  }
+
   /** Move scroll target to nearest chapter; rAF lerps currentY — no instant jump. */
   function requestChapterSnap(fromY) {
     const max = getMaxScroll();
@@ -131,7 +144,8 @@
 
       const lastSeg = numTrans - 1;
       const rollRight = lastSeg % 2 === 0;
-      const settledX = rollRight ? -vw * 0.15 : vw * 1.15;
+      const park = getDonutPeekBounds(vw);
+      const settledX = rollRight ? park.leftPark : park.rightPark;
       donut.style.setProperty("--donut-x", `${settledX}px`);
       let rotSettled = 0;
       for (let i = 0; i < numTrans; i += 1) {
@@ -218,10 +232,11 @@
       }
     });
 
+    const park = getDonutPeekBounds(vw);
     if (u < 0.5) {
       const rollRight = seg % 2 === 0;
-      const startX = rollRight ? vw * 1.15 : -vw * 0.15;
-      const endX = rollRight ? -vw * 0.15 : vw * 1.15;
+      const startX = rollRight ? park.rightPark : park.leftPark;
+      const endX = rollRight ? park.leftPark : park.rightPark;
       const x = lerp(startX, endX, pushE);
       donut.style.setProperty("--donut-x", `${x}px`);
 
@@ -233,7 +248,7 @@
       donut.style.setProperty("--donut-rot", `${rotAccum}deg`);
     } else {
       const rollRight = seg % 2 === 0;
-      const endX = rollRight ? -vw * 0.15 : vw * 1.15;
+      const endX = rollRight ? park.leftPark : park.rightPark;
       donut.style.setProperty("--donut-x", `${endX}px`);
       let rotAccum = 0;
       for (let i = 0; i <= seg; i += 1) {

@@ -5,7 +5,7 @@
   --ink: #2c2420;
   --ink-soft: rgba(44, 36, 32, 0.72);
   --accent: #c17b6e;
-  --donut-size: min(38vw, 260px);
+  --donut-size: min(54vw, 400px);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --slide-count: 4;
 }
