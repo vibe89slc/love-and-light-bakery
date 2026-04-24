@@ -30,7 +30,7 @@ body {
   min-height: calc(var(--slide-count) * 100vh);
 }
 
-body.is-horizontal-stage {
+body.is-push-stage {
   overscroll-behavior-y: contain;
 }
 
@@ -135,20 +135,17 @@ body.is-horizontal-stage {
   overflow: hidden;
 }
 
-.stage-track {
-  display: flex;
-  flex-direction: row;
+.stage-stack {
+  position: relative;
+  width: 100%;
   height: 100%;
-  will-change: transform;
-  backface-visibility: hidden;
 }
 
 .slide {
-  flex: 0 0 100vw;
-  width: 100vw;
-  max-width: 100vw;
-  height: 100vh;
-  min-height: 100vh;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -156,7 +153,7 @@ body.is-horizontal-stage {
   align-items: center;
   justify-content: center;
   padding: 6rem 1.75rem 4rem;
-  position: relative;
+  will-change: transform, opacity;
 }
 
 .panel--hero {
@@ -422,7 +419,7 @@ h2 {
     min-height: 0;
   }
 
-  body.is-horizontal-stage {
+  body.is-push-stage {
     overscroll-behavior-y: auto;
   }
 
@@ -430,21 +427,25 @@ h2 {
     position: relative;
     overflow: visible;
     height: auto;
+    min-height: 0;
   }
 
-  .stage-track {
-    flex-direction: column;
+  .stage-stack {
     height: auto;
-    transform: none !important;
   }
 
   .slide {
-    flex: none;
+    position: relative;
+    inset: auto;
     width: 100%;
-    max-width: none;
     height: auto;
     min-height: 0;
     overflow: visible;
+  }
+
+  .slide .panel__inner {
+    transform: none !important;
+    opacity: 1 !important;
   }
 
   .donut-stage {
