@@ -47,6 +47,12 @@
   let wheelGestureAnchor = null;
   /** Accumulated wheel delta (after WHEEL_MULTIPLIER) for the current burst, capped to ±one chapter. */
   let wheelAccumScaled = 0;
+  /** Touch: follow native scroll during swipe, then snap one chapter from start anchor. */
+  let touchLastClientY = null;
+  let touchGestureAnchor = null;
+  let touchIntentSum = 0;
+  const TOUCH_MIN_SWIPE_PX = 18;
+  const TOUCH_SNAP_INTENT = 120;
   /** Chapter px to ease toward (null = user drives targetY only). */
   let pendingSnapY = null;
 
@@ -401,8 +407,45 @@
     }
   }
 
+  function resetTouchGesture() {
+    touchLastClientY = null;
+    touchGestureAnchor = null;
+    touchIntentSum = 0;
+  }
+
+  function touchShouldUseChapterScroll(e) {
+    const t = e.target;
+    if (t.closest("a, button, input, textarea, select, label")) {
+      return false;
+    }
+    const slide = t.closest(".slide");
+    if (slide && slide.scrollHeight > slide.clientHeight + 12) {
+      return false;
+    }
+    return true;
+  }
+
+  function finishTouchGesture() {
+    if (touchGestureAnchor === null) return;
+    const anchorForSnap = touchGestureAnchor;
+    const dir = touchIntentSum >= 0 ? 1 : -1;
+    resetTouchGesture();
+    lastWheelTime = performance.now();
+    requestChapterSnap(window.scrollY, dir * TOUCH_SNAP_INTENT, anchorForSnap);
+  }
+
   function syncScrollFromNative() {
     if (prefersReduced) return;
+    if (touchGestureAnchor !== null) {
+      const y = window.scrollY;
+      pendingSnapY = null;
+      currentY = y;
+      targetY = y;
+      return;
+    }
+    if (pendingSnapY !== null) {
+      return;
+    }
     const y = window.scrollY;
     if (Math.abs(y - currentY) <= 14) {
       return;
@@ -502,6 +545,60 @@
   );
 
   window.addEventListener(
+    "touchstart",
+    function (e) {
+      if (e.touches.length !== 1) {
+        resetTouchGesture();
+        return;
+      }
+      if (!touchShouldUseChapterScroll(e)) {
+        resetTouchGesture();
+        return;
+      }
+      pendingSnapY = null;
+      lastWheelTime = performance.now();
+      touchLastClientY = e.touches[0].clientY;
+      touchGestureAnchor = currentY;
+      touchIntentSum = 0;
+    },
+    { passive: true }
+  );
+
+  window.addEventListener(
+    "touchmove",
+    function (e) {
+      if (touchGestureAnchor === null || e.touches.length !== 1) {
+        return;
+      }
+      const y = e.touches[0].clientY;
+      const dy = touchLastClientY - y;
+      touchLastClientY = y;
+      if (Math.abs(dy) > 0.25) {
+        lastWheelTime = performance.now();
+        touchIntentSum += dy;
+      }
+    },
+    { passive: true }
+  );
+
+  window.addEventListener(
+    "touchend",
+    function () {
+      if (touchGestureAnchor === null) {
+        return;
+      }
+      if (Math.abs(touchIntentSum) < TOUCH_MIN_SWIPE_PX) {
+        resetTouchGesture();
+        return;
+      }
+      finishTouchGesture();
+    },
+    { passive: true }
+  );
+
+  window.addEventListener("touchcancel", resetTouchGesture, { passive: true });
+
+  window.addEventListener(
     "scroll",
     function () {
       if (scrollSyncLock) return;
@@ -510,6 +607,9 @@
       scrollSnapTimer = setTimeout(function () {
         scrollSnapTimer = null;
         if (performance.now() - lastWheelTime < AFTER_WHEEL_TOUCH_GUARD_MS) {
+          return;
+        }
+        if (pendingSnapY !== null) {
           return;
         }
         requestChapterSnap(window.scrollY, 0);
