@@ -76,14 +76,23 @@
     return best;
   }
 
+  /** Fraction of donut width (diameter) kept visible when parked on an edge. */
+  const DONUT_VISIBLE_FRAC = 0.35;
+
   /**
    * Center-x when donut is parked on the left vs right edge.
-   * Half the donut stays in view (center on viewport edge; other half past the edge).
+   * ~35% of the donut width stays on-screen; the rest sits past the edge.
    */
   function getDonutPeekBounds(vw) {
+    const rect = donut.getBoundingClientRect();
+    let half = rect.width / 2;
+    if (half < 6) {
+      half = Math.min(vw * 0.27, 202);
+    }
+    const visibleW = DONUT_VISIBLE_FRAC * (2 * half);
     return {
-      leftPark: 0,
-      rightPark: vw,
+      leftPark: visibleW - half,
+      rightPark: vw - visibleW + half,
     };
   }
 
