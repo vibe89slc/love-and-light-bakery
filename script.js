@@ -16,11 +16,12 @@
   const SCROLL_STRETCH = 1.82;
   /** Wheel delta dampening (higher = less physical scrolling to move). */
   const WHEEL_MULTIPLIER = 0.52;
-  /** Base lerp toward targetY each frame (snap uses adaptive ease below). */
-  const SMOOTH_EASE = 0.084;
-  /** Stronger lerp when far from target (smooth snap glide). */
-  const SMOOTH_EASE_MID = 0.11;
-  const SMOOTH_EASE_FAR = 0.135;
+  /** currentY → targetY lerp (softer = smoother page motion). */
+  const SMOOTH_EASE = 0.056;
+  const SMOOTH_EASE_MID = 0.074;
+  const SMOOTH_EASE_FAR = 0.095;
+  /** targetY → chapter snap (first easing stage; lower = longer glide into next/prev stop). */
+  const SNAP_TARGET_EASE = 0.042;
   /** Ignore tiny differences at rest. */
   const SCROLL_EPS = 0.45;
 
@@ -41,6 +42,8 @@
   let lastWheelTime = 0;
   /** Sum of raw wheel deltaY during the current gesture (sign = direction). */
   let wheelIntentSum = 0;
+  /** Chapter px to ease toward (null = user drives targetY only). */
+  let pendingSnapY = null;
 
   function clamp(n, min, max) {
     return Math.min(max, Math.max(min, n));
@@ -140,8 +143,8 @@
   }
 
   /**
-   * Move scroll target to a chapter stop. Pass wheelIntent from the wheel gesture, or omit for resize.
-   * rAF lerps currentY — no instant jump.
+   * Begin a smooth glide to a chapter stop (targetY eases in, then currentY follows).
+   * Pass wheelIntent from wheel; omit wheelIntent for resize and use forceChapterSnap instead.
    */
   function requestChapterSnap(fromY, wheelIntent) {
     const max = getMaxScroll();
@@ -150,10 +153,25 @@
       0,
       max
     );
-    if (Math.abs(snap - fromY) < 1.25 && Math.abs(snap - targetY) < 1.25) {
+    if (
+      Math.abs(snap - fromY) < 1.25 &&
+      Math.abs(snap - targetY) < 1.25 &&
+      pendingSnapY === null
+    ) {
       return;
     }
+    pendingSnapY = snap;
+  }
+
+  function forceChapterSnap(fromY) {
+    pendingSnapY = null;
+    const max = getMaxScroll();
+    const snap = clamp(nearestChapterSnap(fromY), 0, max);
     targetY = snap;
+    currentY = snap;
+    scrollSyncLock = true;
+    window.scrollTo(0, snap);
+    scrollSyncLock = false;
   }
 
   function setScrollMetrics() {
@@ -327,6 +345,7 @@
     if (prefersReduced) return;
     const y = window.scrollY;
     if (Math.abs(y - currentY) > 14) {
+      pendingSnapY = null;
       currentY = y;
       targetY = y;
     }
@@ -335,11 +354,19 @@
   function frame() {
     if (!prefersReduced) {
       const max = getMaxScroll();
+      if (pendingSnapY !== null) {
+        pendingSnapY = clamp(pendingSnapY, 0, max);
+        targetY += (pendingSnapY - targetY) * SNAP_TARGET_EASE;
+        if (Math.abs(pendingSnapY - targetY) < 0.55) {
+          targetY = pendingSnapY;
+          pendingSnapY = null;
+        }
+      }
       targetY = clamp(targetY, 0, max);
       const dist = Math.abs(targetY - currentY);
       const ease = dist > 110 ? SMOOTH_EASE_FAR : dist > 48 ? SMOOTH_EASE_MID : SMOOTH_EASE;
       currentY += (targetY - currentY) * ease;
-      if (dist < SCROLL_EPS) {
+      if (Math.abs(targetY - currentY) < SCROLL_EPS) {
         currentY = targetY;
       }
       if (Math.abs(window.scrollY - currentY) > 0.35) {
@@ -362,7 +389,7 @@
       targetY = clamp(targetY, 0, max);
       currentY = clamp(currentY, 0, max);
       window.scrollTo(0, currentY);
-      requestChapterSnap(window.scrollY);
+      forceChapterSnap(window.scrollY);
     }
     update();
   });
@@ -376,6 +403,7 @@
     function (e) {
       e.preventDefault();
       lastWheelTime = performance.now();
+      pendingSnapY = null;
       wheelIntentSum += e.deltaY;
       const max = getMaxScroll();
       targetY = clamp(targetY + e.deltaY * WHEEL_MULTIPLIER, 0, max);
