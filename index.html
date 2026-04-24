@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Love &amp; Light Bakery</title>
+  <meta name="description" content="Handmade donuts, soft mornings, and a little extra light — Love &amp; Light Bakery." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <div class="ambient__orb ambient__orb--1"></div>
+    <div class="ambient__orb ambient__orb--2"></div>
+    <div class="ambient__orb ambient__orb--3"></div>
+  </div>
+
+  <div class="donut-stage" aria-hidden="true">
+    <div class="donut" id="rolling-donut">
+      <svg class="donut__svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="doughGrad" cx="40%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#f5d4a8" />
+            <stop offset="55%" stop-color="#e8a86a" />
+            <stop offset="100%" stop-color="#c97b3c" />
+          </radialGradient>
+          <radialGradient id="icingGrad" cx="45%" cy="40%" r="55%">
+            <stop offset="0%" stop-color="#ffe8f4" />
+            <stop offset="45%" stop-color="#f8b8d9" />
+            <stop offset="100%" stop-color="#e89bc4" />
+          </radialGradient>
+        </defs>
+        <ellipse cx="100" cy="108" rx="78" ry="28" fill="#000" opacity="0.12" />
+        <circle cx="100" cy="100" r="72" fill="url(#doughGrad)" />
+        <circle cx="100" cy="100" r="58" fill="url(#icingGrad)" />
+        <circle cx="100" cy="100" r="22" fill="#fdf6ee" opacity="0.95" />
+        <circle cx="100" cy="100" r="18" fill="#c97b3c" opacity="0.35" />
+        <g class="donut__sprinkles">
+          <rect x="118" y="72" width="10" height="3" rx="1.5" fill="#fff59a" transform="rotate(20 118 72)" />
+          <rect x="62" y="88" width="10" height="3" rx="1.5" fill="#a8e6cf" transform="rotate(-35 62 88)" />
+          <rect x="130" y="108" width="10" height="3" rx="1.5" fill="#c4b5fd" transform="rotate(55 130 108)" />
+          <rect x="78" y="118" width="10" height="3" rx="1.5" fill="#fdba74" transform="rotate(-12 78 118)" />
+          <rect x="95" y="68" width="10" height="3" rx="1.5" fill="#93c5fd" transform="rotate(80 95 68)" />
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <header class="top-bar">
+    <span class="top-bar__mark">Love &amp; Light</span>
+    <span class="top-bar__tag">Bakery</span>
+  </header>
+
+  <main>
+    <section class="panel panel--hero" id="hero">
+      <div class="panel__inner">
+        <p class="eyebrow">Salt Lake City · handmade daily</p>
+        <h1>Donuts that roll in slow,<br />and stay with you.</h1>
+        <p class="lede">Scroll easy — our little wheel of joy is on its way through each chapter of the morning.</p>
+        <div class="scroll-hint">
+          <span class="scroll-hint__line"></span>
+          <span>Scroll</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel panel--story" id="story" data-reveal>
+      <div class="panel__inner">
+        <h2>Made with love, glazed with light</h2>
+        <p>We proof overnight, fry to a soft puff, and finish with small-batch glazes — lavender sugar, brown-butter maple, and classic vanilla bean. Nothing rushed; every ring gets a moment.</p>
+        <ul class="pill-list">
+          <li>Seasonal sprinkles</li>
+          <li>Local dairy</li>
+          <li>Friday cruller drops</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel panel--visit" id="visit" data-reveal>
+      <div class="panel__inner">
+        <h2>Come say hi</h2>
+        <p>Open Tuesday–Sunday, 7am–2pm. Grab a dozen for the office or a single donut for the walk home — either way, leave a little brighter.</p>
+        <a class="cta" href="mailto:hello@loveandlightbakery.example">hello@loveandlightbakery.example</a>
+        <p class="fineprint">Placeholder contact — swap for real details anytime.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© Love &amp; Light Bakery</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
