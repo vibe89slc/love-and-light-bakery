@@ -319,16 +319,6 @@ body.is-push-stage {
   margin: 0 0 1rem;
 }
 
-.slogan {
-  font-family: "Fraunces", Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  font-size: clamp(1.15rem, 2.8vw, 1.45rem);
-  color: var(--accent);
-  margin: -0.35rem 0 1.35rem;
-  letter-spacing: 0.01em;
-}
-
 h1 {
   font-family: "Fraunces", Georgia, serif;
   font-weight: 600;
@@ -336,6 +326,34 @@ h1 {
   line-height: 1.12;
   margin: 0 0 1.25rem;
   letter-spacing: -0.02em;
+}
+
+.h1-glow {
+  color: #3d2f28;
+  text-shadow:
+    0 0 12px rgba(255, 252, 235, 0.95),
+    0 0 28px rgba(255, 228, 196, 0.75),
+    0 0 48px rgba(255, 205, 160, 0.5),
+    0 0 72px rgba(244, 180, 130, 0.35);
+  animation: h1-glow-pulse 3.5s ease-in-out infinite;
+}
+
+@keyframes h1-glow-pulse {
+  0%,
+  100% {
+    text-shadow:
+      0 0 10px rgba(255, 252, 235, 0.9),
+      0 0 24px rgba(255, 228, 196, 0.65),
+      0 0 42px rgba(255, 205, 160, 0.42),
+      0 0 64px rgba(244, 180, 130, 0.28);
+  }
+  50% {
+    text-shadow:
+      0 0 16px rgba(255, 255, 245, 1),
+      0 0 34px rgba(255, 235, 210, 0.85),
+      0 0 56px rgba(255, 215, 175, 0.58),
+      0 0 88px rgba(250, 195, 145, 0.4);
+  }
 }
 
 h2 {
@@ -464,6 +482,13 @@ h2 {
 
   .scroll-hint__line {
     animation: none;
+  }
+
+  .h1-glow {
+    animation: none;
+    text-shadow:
+      0 0 10px rgba(255, 252, 235, 0.85),
+      0 0 22px rgba(255, 228, 196, 0.55);
   }
 
   .ambient__orb {
