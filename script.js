@@ -76,17 +76,15 @@
     return best;
   }
 
-  /** Center-x when donut is parked left vs right; always leaves a slice on-screen. */
+  /**
+   * Center-x when donut is parked on the left vs right edge.
+   * Half the donut stays in view (center on viewport edge; other half past the edge).
+   */
   function getDonutPeekBounds(vw) {
-    const rect = donut.getBoundingClientRect();
-    let half = rect.width / 2;
-    if (half < 6) {
-      half = Math.min(vw * 0.27, 202);
-    }
-    const peek = Math.max(64, half * 0.38);
-    const leftPark = peek - half;
-    const rightPark = vw + half - peek;
-    return { leftPark, rightPark };
+    return {
+      leftPark: 0,
+      rightPark: vw,
+    };
   }
 
   /** Move scroll target to nearest chapter; rAF lerps currentY — no instant jump. */
