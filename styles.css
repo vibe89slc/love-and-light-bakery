@@ -319,6 +319,16 @@ body.is-push-stage {
   margin: 0 0 1rem;
 }
 
+.slogan {
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(1.15rem, 2.8vw, 1.45rem);
+  color: var(--accent);
+  margin: -0.35rem 0 1.35rem;
+  letter-spacing: 0.01em;
+}
+
 h1 {
   font-family: "Fraunces", Georgia, serif;
   font-weight: 600;
