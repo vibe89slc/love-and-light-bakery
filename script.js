@@ -28,6 +28,14 @@
   let fadePhaseKey = null;
   let fadeStartedAt = 0;
   const TEXT_FADE_MS = 960;
+  /** Snap to chapter starts after wheel / touch so you never rest mid-transition. */
+  const WHEEL_SNAP_DEBOUNCE_MS = 140;
+  const SCROLL_SNAP_DEBOUNCE_MS = 200;
+  const AFTER_WHEEL_TOUCH_GUARD_MS = 400;
+
+  let wheelSnapTimer = null;
+  let scrollSnapTimer = null;
+  let lastWheelTime = 0;
 
   function clamp(n, min, max) {
     return Math.min(max, Math.max(min, n));
@@ -44,6 +52,38 @@
 
   function getMaxScroll() {
     return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  }
+
+  function chapterStepPx() {
+    return window.innerHeight * SCROLL_STRETCH;
+  }
+
+  function nearestChapterSnap(y) {
+    const step = chapterStepPx();
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i <= numTrans; i += 1) {
+      const p = i * step;
+      const d = Math.abs(y - p);
+      if (d < bestDist) {
+        bestDist = d;
+        best = p;
+      }
+    }
+    return best;
+  }
+
+  function applyChapterSnap(fromY) {
+    const max = getMaxScroll();
+    const snap = clamp(nearestChapterSnap(fromY), 0, max);
+    if (Math.abs(snap - fromY) < 2.5) {
+      return;
+    }
+    scrollSyncLock = true;
+    targetY = snap;
+    currentY = snap;
+    window.scrollTo(0, snap);
+    scrollSyncLock = false;
   }
 
   function setScrollMetrics() {
@@ -248,6 +288,7 @@
       targetY = clamp(targetY, 0, max);
       currentY = clamp(currentY, 0, max);
       window.scrollTo(0, currentY);
+      applyChapterSnap(window.scrollY);
     }
     update();
   });
@@ -260,8 +301,14 @@
     "wheel",
     function (e) {
       e.preventDefault();
+      lastWheelTime = performance.now();
       const max = getMaxScroll();
       targetY = clamp(targetY + e.deltaY * WHEEL_MULTIPLIER, 0, max);
+      clearTimeout(wheelSnapTimer);
+      wheelSnapTimer = setTimeout(function () {
+        wheelSnapTimer = null;
+        applyChapterSnap(targetY);
+      }, WHEEL_SNAP_DEBOUNCE_MS);
     },
     { passive: false }
   );
@@ -271,6 +318,14 @@
     function () {
       if (scrollSyncLock) return;
       syncScrollFromNative();
+      clearTimeout(scrollSnapTimer);
+      scrollSnapTimer = setTimeout(function () {
+        scrollSnapTimer = null;
+        if (performance.now() - lastWheelTime < AFTER_WHEEL_TOUCH_GUARD_MS) {
+          return;
+        }
+        applyChapterSnap(window.scrollY);
+      }, SCROLL_SNAP_DEBOUNCE_MS);
     },
     { passive: true }
   );
