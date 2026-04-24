@@ -7,6 +7,7 @@
   if (!donut || !stack) return;
 
   const slides = stack.querySelectorAll(".slide");
+  const backdropSlides = document.querySelectorAll("#backdrop-stack .backdrop-slide");
   const slideCount = slides.length;
   const numTrans = Math.max(1, slideCount - 1);
 
@@ -42,11 +43,25 @@
   let lastWheelTime = 0;
   /** Sum of raw wheel deltaY during the current gesture (sign = direction). */
   let wheelIntentSum = 0;
+  /** Scroll position when the current wheel burst began (one chapter max per burst). */
+  let wheelGestureAnchor = null;
+  /** Accumulated wheel delta (after WHEEL_MULTIPLIER) for the current burst, capped to ±one chapter. */
+  let wheelAccumScaled = 0;
   /** Chapter px to ease toward (null = user drives targetY only). */
   let pendingSnapY = null;
 
   function clamp(n, min, max) {
     return Math.min(max, Math.max(min, n));
+  }
+
+  function syncBackdropFromSlides() {
+    if (!backdropSlides.length) return;
+    slides.forEach(function (slide, k) {
+      const bd = backdropSlides[k];
+      if (!bd) return;
+      bd.style.zIndex = slide.style.zIndex;
+      bd.style.opacity = slide.style.opacity;
+    });
   }
 
   function lerp(a, b, t) {
@@ -122,6 +137,37 @@
     return t < 0.93 ? lower : upper;
   }
 
+  /**
+   * Strong wheel / swipe: snap to exactly the next or previous chapter stop (no skipping).
+   * Matches common scroll-story UX (one full-page step per gesture).
+   */
+  function adjacentChapterSnap(y, wheelIntent) {
+    const step = chapterStepPx();
+    const max = getMaxScroll();
+    const yy = clamp(y, 0, max);
+
+    if (wheelIntent > 0 && yy >= max - 14) {
+      return max;
+    }
+    if (wheelIntent < 0 && yy <= 14) {
+      return 0;
+    }
+
+    const idx = Math.min(Math.floor(yy / step + 1e-9), numTrans);
+
+    if (wheelIntent > 0) {
+      if (idx >= numTrans) {
+        return max;
+      }
+      return (idx + 1) * step;
+    }
+
+    if (idx <= 0) {
+      return 0;
+    }
+    return (idx - 1) * step;
+  }
+
   /** Fraction of donut width (diameter) kept visible when parked on an edge. */
   const DONUT_VISIBLE_FRAC = 0.44;
 
@@ -146,13 +192,25 @@
    * Begin a smooth glide to a chapter stop (targetY eases in, then currentY follows).
    * Pass wheelIntent from wheel; omit wheelIntent for resize and use forceChapterSnap instead.
    */
-  function requestChapterSnap(fromY, wheelIntent) {
+  /**
+   * @param {number} fromY - scroll Y used for weak-intent / scroll settle (usually targetY).
+   * @param {number} [wheelIntent] - accumulated wheel delta; omit for resize / programmatic.
+   * @param {number} [wheelAnchor] - scroll Y at wheel burst start; strong snaps use this so one gesture = one chapter.
+   */
+  function requestChapterSnap(fromY, wheelIntent, wheelAnchor) {
     const max = getMaxScroll();
-    const snap = clamp(
-      wheelIntent === undefined ? nearestChapterSnap(fromY) : intentAwareChapterSnap(fromY, wheelIntent),
-      0,
-      max
-    );
+    const INTENT_STRONG = 10;
+    let pick;
+    if (wheelIntent === undefined) {
+      pick = nearestChapterSnap(fromY);
+    } else if (Math.abs(wheelIntent) >= INTENT_STRONG && wheelAnchor != null) {
+      pick = adjacentChapterSnap(wheelAnchor, wheelIntent);
+    } else if (Math.abs(wheelIntent) >= INTENT_STRONG) {
+      pick = adjacentChapterSnap(fromY, wheelIntent);
+    } else {
+      pick = intentAwareChapterSnap(fromY, wheelIntent);
+    }
+    const snap = clamp(pick, 0, max);
     if (
       Math.abs(snap - fromY) < 1.25 &&
       Math.abs(snap - targetY) < 1.25 &&
@@ -216,6 +274,7 @@
           inner.style.opacity = "1";
         }
       });
+      syncBackdropFromSlides();
 
       const lastSeg = numTrans - 1;
       const rollRight = lastSeg % 2 === 0;
@@ -306,6 +365,7 @@
         inner.style.opacity = "1";
       }
     });
+    syncBackdropFromSlides();
 
     const park = getDonutPeekBounds(vw);
     if (u < 0.5) {
@@ -344,11 +404,22 @@
   function syncScrollFromNative() {
     if (prefersReduced) return;
     const y = window.scrollY;
-    if (Math.abs(y - currentY) > 14) {
-      pendingSnapY = null;
-      currentY = y;
-      targetY = y;
+    if (Math.abs(y - currentY) <= 14) {
+      return;
     }
+    pendingSnapY = null;
+    const step = chapterStepPx();
+    const max = getMaxScroll();
+    const lo = clamp(currentY - step, 0, max);
+    const hi = clamp(currentY + step, 0, max);
+    const clampedY = clamp(y, lo, hi);
+    if (Math.abs(clampedY - y) > 0.5) {
+      scrollSyncLock = true;
+      window.scrollTo(0, clampedY);
+      scrollSyncLock = false;
+    }
+    currentY = clampedY;
+    targetY = clampedY;
   }
 
   function frame() {
@@ -405,14 +476,26 @@
       lastWheelTime = performance.now();
       pendingSnapY = null;
       wheelIntentSum += e.deltaY;
+
+      const step = chapterStepPx();
       const max = getMaxScroll();
-      targetY = clamp(targetY + e.deltaY * WHEEL_MULTIPLIER, 0, max);
+      if (wheelGestureAnchor === null) {
+        wheelGestureAnchor = currentY;
+        wheelAccumScaled = 0;
+      }
+      wheelAccumScaled += e.deltaY * WHEEL_MULTIPLIER;
+      const capped = clamp(wheelAccumScaled, -step, step);
+      targetY = clamp(wheelGestureAnchor + capped, 0, max);
+
       clearTimeout(wheelSnapTimer);
       wheelSnapTimer = setTimeout(function () {
         wheelSnapTimer = null;
         const intent = wheelIntentSum;
+        const anchorForSnap = wheelGestureAnchor;
         wheelIntentSum = 0;
-        requestChapterSnap(targetY, intent);
+        wheelGestureAnchor = null;
+        wheelAccumScaled = 0;
+        requestChapterSnap(targetY, intent, anchorForSnap);
       }, WHEEL_SNAP_DEBOUNCE_MS);
     },
     { passive: false }
