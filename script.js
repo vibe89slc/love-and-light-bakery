@@ -39,6 +39,8 @@
   let wheelSnapTimer = null;
   let scrollSnapTimer = null;
   let lastWheelTime = 0;
+  /** Sum of raw wheel deltaY during the current gesture (sign = direction). */
+  let wheelIntentSum = 0;
 
   function clamp(n, min, max) {
     return Math.min(max, Math.max(min, n));
@@ -76,6 +78,47 @@
     return best;
   }
 
+  /**
+   * Pick lower or upper chapter boundary between y lives.
+   * Avoids "nearest" snapping backward when the user nudged downward but not far enough.
+   */
+  function intentAwareChapterSnap(y, wheelIntent) {
+    const step = chapterStepPx();
+    const max = getMaxScroll();
+    if (y < 14) {
+      return 0;
+    }
+    if (y > max - 14) {
+      return max;
+    }
+
+    const lower = clamp(Math.floor(y / step) * step, 0, max);
+    const upper = clamp(Math.min(lower + step, numTrans * step), 0, max);
+    const span = upper - lower;
+    if (span < 2) {
+      return lower;
+    }
+
+    const t = (y - lower) / span;
+    const INTENT_GATE = 10;
+
+    if (Math.abs(wheelIntent) < INTENT_GATE) {
+      if (t >= 0.52) {
+        return upper;
+      }
+      if (t <= 0.48) {
+        return lower;
+      }
+      return t > 0.22 ? upper : lower;
+    }
+
+    if (wheelIntent > 0) {
+      return t > 0.07 ? upper : lower;
+    }
+
+    return t < 0.93 ? lower : upper;
+  }
+
   /** Fraction of donut width (diameter) kept visible when parked on an edge. */
   const DONUT_VISIBLE_FRAC = 0.44;
 
@@ -96,10 +139,17 @@
     };
   }
 
-  /** Move scroll target to nearest chapter; rAF lerps currentY — no instant jump. */
-  function requestChapterSnap(fromY) {
+  /**
+   * Move scroll target to a chapter stop. Pass wheelIntent from the wheel gesture, or omit for resize.
+   * rAF lerps currentY — no instant jump.
+   */
+  function requestChapterSnap(fromY, wheelIntent) {
     const max = getMaxScroll();
-    const snap = clamp(nearestChapterSnap(fromY), 0, max);
+    const snap = clamp(
+      wheelIntent === undefined ? nearestChapterSnap(fromY) : intentAwareChapterSnap(fromY, wheelIntent),
+      0,
+      max
+    );
     if (Math.abs(snap - fromY) < 1.25 && Math.abs(snap - targetY) < 1.25) {
       return;
     }
@@ -326,12 +376,15 @@
     function (e) {
       e.preventDefault();
       lastWheelTime = performance.now();
+      wheelIntentSum += e.deltaY;
       const max = getMaxScroll();
       targetY = clamp(targetY + e.deltaY * WHEEL_MULTIPLIER, 0, max);
       clearTimeout(wheelSnapTimer);
       wheelSnapTimer = setTimeout(function () {
         wheelSnapTimer = null;
-        requestChapterSnap(targetY);
+        const intent = wheelIntentSum;
+        wheelIntentSum = 0;
+        requestChapterSnap(targetY, intent);
       }, WHEEL_SNAP_DEBOUNCE_MS);
     },
     { passive: false }
@@ -348,7 +401,7 @@
         if (performance.now() - lastWheelTime < AFTER_WHEEL_TOUCH_GUARD_MS) {
           return;
         }
-        requestChapterSnap(window.scrollY);
+        requestChapterSnap(window.scrollY, 0);
       }, SCROLL_SNAP_DEBOUNCE_MS);
     },
     { passive: true }
