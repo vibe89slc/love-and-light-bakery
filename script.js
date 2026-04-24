@@ -77,11 +77,11 @@
   }
 
   /** Fraction of donut width (diameter) kept visible when parked on an edge. */
-  const DONUT_VISIBLE_FRAC = 0.42;
+  const DONUT_VISIBLE_FRAC = 0.44;
 
   /**
    * Center-x when donut is parked on the left vs right edge.
-   * ~35% of the donut width stays on-screen; the rest sits past the edge.
+   * ~44% of the donut width stays on-screen; the rest sits past the edge.
    */
   function getDonutPeekBounds(vw) {
     const rect = donut.getBoundingClientRect();
