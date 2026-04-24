@@ -833,10 +833,75 @@ h2 {
   }
 }
 
+/* Home index: native stacked sections on small viewports; fixed donut spins with scroll */
+@media (max-width: 899px) {
+  body.is-mobile-stack {
+    min-height: 0;
+  }
+
+  body.is-mobile-stack .stage-viewport {
+    position: relative;
+    inset: auto;
+    z-index: 5;
+    overflow: visible;
+    height: auto;
+    min-height: 0;
+  }
+
+  body.is-mobile-stack .stage-stack {
+    height: auto;
+  }
+
+  body.is-mobile-stack .slide {
+    position: relative;
+    inset: auto;
+    z-index: 3;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  body.is-mobile-stack .slide.panel--hero {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  body.is-mobile-stack .slide .panel__inner {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  body.is-mobile-stack .backdrop-stack {
+    display: none;
+  }
+
+  body.is-mobile-stack .panel--story {
+    background: linear-gradient(180deg, transparent 0%, var(--blush) 18%, var(--blush) 100%);
+  }
+
+  body.is-mobile-stack .panel--reviews {
+    background: linear-gradient(180deg, var(--blush) 0%, #f0e8f8 50%, var(--lavender) 100%);
+  }
+
+  body.is-mobile-stack .panel--visit {
+    background: linear-gradient(180deg, var(--lavender) 0%, var(--cream) 55%, var(--cream) 100%);
+  }
+
+  body.is-mobile-stack .donut-stage {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  body.is-mobile-stack .donut {
+    will-change: transform;
+  }
+}
+
 /* —— Site navigation (desktop + mobile “glaze drawer”) —— */
 .nav-bun {
-  --donut-hole: 31%;
-  --donut-hole-edge: 33%;
   position: relative;
   flex-shrink: 0;
   width: 3rem;
@@ -845,15 +910,7 @@ h2 {
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  /* Warm bun colors (unchanged), as a ring with a transparent center */
-  background: radial-gradient(
-    circle at 32% 28%,
-    transparent 0,
-    transparent var(--donut-hole),
-    #fff4e0 var(--donut-hole-edge),
-    #e8a86a 48%,
-    #c97b3c 100%
-  );
+  background: radial-gradient(circle at 32% 28%, #fff4e0 0%, #e8a86a 42%, #c97b3c 100%);
   box-shadow:
     0 4px 0 rgba(180, 110, 55, 0.35),
     0 8px 20px rgba(44, 36, 32, 0.18);
@@ -886,10 +943,58 @@ h2 {
   pointer-events: none;
 }
 
-/* Plain doughnut only: no frosting layer or sprinkles (markup retained) */
-.nav-bun__icing,
+.nav-bun__icing {
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ffe8f4 0%, #f8b8d9 55%, #e89bc4 100%);
+  box-shadow: inset 0 -2px 4px rgba(44, 36, 32, 0.08);
+  transition: transform 0.45s var(--ease-out), opacity 0.35s ease;
+}
+
 .nav-bun__seed {
-  display: none;
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff59a;
+  box-shadow: 0 1px 0 rgba(44, 36, 32, 0.12);
+  transition: transform 0.45s var(--ease-out), opacity 0.35s ease;
+}
+
+.nav-bun__seed--1 {
+  top: 28%;
+  left: 62%;
+  background: #fde68a;
+}
+
+.nav-bun__seed--2 {
+  top: 48%;
+  left: 24%;
+  background: #a8e6cf;
+}
+
+.nav-bun__seed--3 {
+  top: 58%;
+  left: 58%;
+  background: #c4b5fd;
+}
+
+.top-bar--open .nav-bun__icing {
+  transform: scale(0.35) rotate(90deg);
+  opacity: 0.85;
+}
+
+.top-bar--open .nav-bun__seed--1 {
+  transform: translate(-6px, 10px) scale(1.15);
+}
+
+.top-bar--open .nav-bun__seed--2 {
+  transform: translate(10px, -4px) scale(1.1);
+}
+
+.top-bar--open .nav-bun__seed--3 {
+  transform: translate(-8px, -8px) scale(0.9);
 }
 
 .site-nav {

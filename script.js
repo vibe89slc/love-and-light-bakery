@@ -13,6 +13,15 @@
 
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  /** Below this width: normal document stack + fixed donut that only rotates with scroll. */
+  const MOBILE_STACK_MAX_PX = 899;
+  /** Scroll Y → donut rotation on mobile (deg per px). */
+  const MOBILE_SCROLL_ROT_PER_PX = 0.48;
+
+  function mobileStackActive() {
+    return !prefersReduced && window.innerWidth <= MOBILE_STACK_MAX_PX;
+  }
+
   /** Viewport heights of scroll per push→fade chapter (higher = more wheel travel per chapter). */
   const SCROLL_STRETCH = 1.82;
   /** Wheel delta dampening (higher = less physical scrolling to move). */
@@ -244,9 +253,17 @@
     body.style.setProperty("--slide-count", String(slideCount));
     if (prefersReduced) {
       body.classList.remove("is-push-stage");
+      body.classList.remove("is-mobile-stack");
       body.style.minHeight = "";
       return;
     }
+    if (mobileStackActive()) {
+      body.classList.remove("is-push-stage");
+      body.classList.add("is-mobile-stack");
+      body.style.minHeight = "";
+      return;
+    }
+    body.classList.remove("is-mobile-stack");
     body.classList.add("is-push-stage");
     const vh = window.innerHeight;
     const segmentPx = vh * SCROLL_STRETCH;
@@ -254,8 +271,45 @@
     body.style.minHeight = `${totalPx}px`;
   }
 
+  function resetSlidesStacked() {
+    slides.forEach(function (slide) {
+      const inner = slide.querySelector(".panel__inner");
+      slide.style.zIndex = "";
+      slide.style.opacity = "";
+      slide.style.pointerEvents = "";
+      if (inner) {
+        inner.style.transform = "";
+        inner.style.opacity = "";
+      }
+    });
+    if (backdropSlides.length) {
+      backdropSlides.forEach(function (bd) {
+        bd.style.zIndex = "";
+        bd.style.opacity = "";
+      });
+    }
+  }
+
+  function updateMobileDonutFromScroll() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const scrollY = window.scrollY;
+    const maxScroll = Math.max(1, getMaxScroll());
+    const park = getDonutPeekBounds(vw);
+    const x = park.rightPark;
+    donut.style.setProperty("--donut-x", `${x}px`);
+    donut.style.setProperty("--donut-rot", `${scrollY * MOBILE_SCROLL_ROT_PER_PX}deg`);
+    if (orbs.length) {
+      const p = clamp(scrollY / maxScroll, 0, 1);
+      const drift = p * vw * 0.08;
+      orbs[0].style.transform = `translate3d(${drift * 0.6}px, ${p * vh * 0.04}px, 0)`;
+      orbs[1].style.transform = `translate3d(${-drift * 0.5}px, ${p * vh * 0.05}px, 0)`;
+      orbs[2].style.transform = `translate3d(${drift * 0.35}px, ${-p * vh * 0.02}px, 0)`;
+    }
+  }
+
   function update() {
-    if (prefersReduced) {
+    if (prefersReduced || mobileStackActive()) {
       return;
     }
     const vh = window.innerHeight;
@@ -455,7 +509,7 @@
   }
 
   function frame() {
-    if (prefersReduced) {
+    if (prefersReduced || mobileStackActive()) {
       return;
     }
     const max = getMaxScroll();
@@ -487,22 +541,51 @@
   targetY = currentY = window.scrollY;
 
   window.addEventListener("resize", function () {
+    const wasMobileStack = body.classList.contains("is-mobile-stack");
     setScrollMetrics();
+    if (prefersReduced) {
+      return;
+    }
+    if (mobileStackActive()) {
+      resetSlidesStacked();
+      const maxM = getMaxScroll();
+      scrollSyncLock = true;
+      window.scrollTo(0, clamp(window.scrollY, 0, maxM));
+      scrollSyncLock = false;
+      updateMobileDonutFromScroll();
+      return;
+    }
     const max = getMaxScroll();
     targetY = clamp(targetY, 0, max);
     currentY = clamp(currentY, 0, max);
-    window.scrollTo(0, currentY);
+    scrollSyncLock = true;
+    window.scrollTo(0, clamp(window.scrollY, 0, max));
+    scrollSyncLock = false;
     forceChapterSnap(window.scrollY);
+    targetY = currentY = window.scrollY;
     update();
+    if (wasMobileStack) {
+      window.requestAnimationFrame(frame);
+    }
   });
 
   if (prefersReduced) {
     return;
   }
 
+  if (mobileStackActive()) {
+    resetSlidesStacked();
+    updateMobileDonutFromScroll();
+  } else {
+    window.requestAnimationFrame(frame);
+  }
+
   window.addEventListener(
     "wheel",
     function (e) {
+      if (mobileStackActive()) {
+        return;
+      }
       e.preventDefault();
       lastWheelTime = performance.now();
       pendingSnapY = null;
@@ -535,6 +618,9 @@
   window.addEventListener(
     "touchstart",
     function (e) {
+      if (mobileStackActive()) {
+        return;
+      }
       if (e.touches.length !== 1) {
         resetTouchGesture();
         return;
@@ -557,6 +643,9 @@
   window.addEventListener(
     "touchmove",
     function (e) {
+      if (mobileStackActive()) {
+        return;
+      }
       if (!touchChapterDriving || touchGestureAnchor === null || e.touches.length !== 1) {
         return;
       }
@@ -584,6 +673,9 @@
   window.addEventListener(
     "touchend",
     function () {
+      if (mobileStackActive()) {
+        return;
+      }
       if (!touchChapterDriving || touchGestureAnchor === null) {
         return;
       }
@@ -602,6 +694,10 @@
     "scroll",
     function () {
       if (scrollSyncLock) return;
+      if (mobileStackActive()) {
+        updateMobileDonutFromScroll();
+        return;
+      }
       syncScrollFromNative();
       clearTimeout(scrollSnapTimer);
       scrollSnapTimer = setTimeout(function () {
@@ -617,6 +713,4 @@
     },
     { passive: true }
   );
-
-  window.requestAnimationFrame(frame);
 })();
