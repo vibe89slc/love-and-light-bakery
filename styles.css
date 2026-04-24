@@ -105,7 +105,7 @@ body.is-push-stage {
 .donut-stage {
   position: fixed;
   inset: 0;
-  z-index: 25;
+  z-index: 2;
   pointer-events: none;
 }
 
@@ -133,10 +133,12 @@ body.is-push-stage {
   inset: 0;
   z-index: 5;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .stage-stack {
   position: relative;
+  z-index: 4;
   width: 100%;
   height: 100%;
 }
@@ -154,10 +156,35 @@ body.is-push-stage {
   justify-content: center;
   padding: 6rem 1.75rem 4rem;
   will-change: transform, opacity;
+  background: transparent;
+  isolation: isolate;
 }
 
-.panel--hero {
-  background: transparent;
+/* Center column wash only — side margins stay clear so donut (below this stack layer) shows over ambient. */
+.slide.panel--story::before,
+.slide.panel--reviews::before,
+.slide.panel--visit::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+  bottom: 0;
+  width: min(94vw, 62rem);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.slide.panel--story::before {
+  background: linear-gradient(180deg, transparent 0%, var(--blush) 18%, var(--blush) 100%);
+}
+
+.slide.panel--reviews::before {
+  background: linear-gradient(180deg, var(--blush) 0%, #f0e8f8 50%, var(--lavender) 100%);
+}
+
+.slide.panel--visit::before {
+  background: linear-gradient(180deg, var(--lavender) 0%, var(--cream) 55%, var(--cream) 100%);
 }
 
 .panel--hero .panel__inner {
@@ -167,19 +194,9 @@ body.is-push-stage {
   text-align: center;
 }
 
-.panel--story {
-  background: linear-gradient(180deg, transparent 0%, var(--blush) 18%, var(--blush) 100%);
-}
-
-.panel--reviews {
-  background: linear-gradient(180deg, var(--blush) 0%, #f0e8f8 50%, var(--lavender) 100%);
-}
-
-.panel--visit {
-  background: linear-gradient(180deg, var(--lavender) 0%, var(--cream) 55%, var(--cream) 100%);
-}
-
 .panel__inner {
+  position: relative;
+  z-index: 1;
   max-width: 34rem;
   width: 100%;
 }

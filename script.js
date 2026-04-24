@@ -77,7 +77,7 @@
   }
 
   /** Fraction of donut width (diameter) kept visible when parked on an edge. */
-  const DONUT_VISIBLE_FRAC = 0.35;
+  const DONUT_VISIBLE_FRAC = 0.42;
 
   /**
    * Center-x when donut is parked on the left vs right edge.
