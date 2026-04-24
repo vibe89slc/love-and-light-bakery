@@ -1,54 +1,78 @@
 (function () {
   const donut = document.getElementById("rolling-donut");
-  const panels = document.querySelectorAll("[data-reveal]");
+  const track = document.getElementById("stage-track");
   const orbs = document.querySelectorAll(".ambient__orb");
+  const body = document.body;
 
-  if (!donut) return;
+  if (!donut || !track) return;
 
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const slideCount = track.children.length;
 
   function clamp(n, min, max) {
     return Math.min(max, Math.max(min, n));
   }
 
-  function update() {
-    const scrollY = window.scrollY;
-    const vh = window.innerHeight;
-    const doc = document.documentElement;
-    const maxScroll = Math.max(1, doc.scrollHeight - vh);
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
 
-    const t = clamp(scrollY / maxScroll, 0, 1);
-
-    const yStart = vh * 0.14;
-    const yEnd = vh * 0.82;
-    const y = yStart + t * (yEnd - yStart);
-    const rot = t * 720;
-
+  function setScrollMetrics() {
+    body.style.setProperty("--slide-count", String(slideCount));
     if (!prefersReduced) {
-      donut.style.setProperty("--donut-y", `${y}px`);
-      donut.style.setProperty("--donut-rot", `${rot}deg`);
+      body.classList.add("is-horizontal-stage");
+      body.style.minHeight = `${slideCount * 100}vh`;
     } else {
-      donut.style.setProperty("--donut-y", `${vh * 0.35}px`);
-      donut.style.setProperty("--donut-rot", "0deg");
+      body.classList.remove("is-horizontal-stage");
+      body.style.minHeight = "";
+    }
+  }
+
+  function update() {
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const scrollY = window.scrollY;
+    const maxScroll = Math.max(1, document.documentElement.scrollHeight - vh);
+
+    if (prefersReduced) {
+      track.style.transform = "";
+      return;
     }
 
-    const dRect = donut.getBoundingClientRect();
-    const donutBottom = dRect.bottom;
-    const lead = vh * 0.06;
+    const progress = clamp(scrollY / maxScroll, 0, 1);
+    const trackX = -progress * (slideCount - 1) * vw;
+    track.style.transform = `translate3d(${trackX}px, 0, 0)`;
 
-    panels.forEach(function (panel) {
-      const pRect = panel.getBoundingClientRect();
-      if (donutBottom > pRect.top + lead) {
-        panel.classList.add("is-revealed");
-      } else {
-        panel.classList.remove("is-revealed");
-      }
-    });
+    const transitions = slideCount - 1;
+    const segFloat = progress * transitions;
+    const segIdx = Math.min(Math.floor(segFloat), transitions - 1);
+    let localT;
+    if (segFloat >= transitions - 1) {
+      localT = segFloat - (transitions - 1);
+      localT = clamp(localT, 0, 1);
+    } else {
+      localT = segFloat - segIdx;
+    }
 
-    if (!prefersReduced && orbs.length) {
-      orbs[0].style.transform = `translate3d(${scrollY * 0.04}px, ${scrollY * 0.03}px, 0)`;
-      orbs[1].style.transform = `translate3d(${scrollY * -0.03}px, ${scrollY * 0.05}px, 0)`;
-      orbs[2].style.transform = `translate3d(${scrollY * 0.02}px, ${scrollY * -0.02}px, 0)`;
+    const ease = localT * localT * (3 - 2 * localT);
+    const rollRight = segIdx % 2 === 0;
+    const startX = rollRight ? vw * 1.12 : vw * -0.12;
+    const endX = rollRight ? vw * -0.12 : vw * 1.12;
+    const x = lerp(startX, endX, ease);
+    donut.style.setProperty("--donut-x", `${x}px`);
+
+    let rotAccum = 0;
+    for (let i = 0; i < segIdx; i += 1) {
+      rotAccum += i % 2 === 0 ? -720 : 720;
+    }
+    const rotDelta = (segIdx % 2 === 0 ? -720 : 720) * ease;
+    donut.style.setProperty("--donut-rot", `${rotAccum + rotDelta}deg`);
+
+    if (orbs.length) {
+      const drift = progress * vw * 0.08;
+      orbs[0].style.transform = `translate3d(${drift * 0.6}px, ${progress * vh * 0.04}px, 0)`;
+      orbs[1].style.transform = `translate3d(${-drift * 0.5}px, ${progress * vh * 0.05}px, 0)`;
+      orbs[2].style.transform = `translate3d(${drift * 0.35}px, ${-progress * vh * 0.02}px, 0)`;
     }
   }
 
@@ -63,7 +87,11 @@
     }
   }
 
+  setScrollMetrics();
   window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", update);
+  window.addEventListener("resize", function () {
+    setScrollMetrics();
+    update();
+  });
   update();
 })();
