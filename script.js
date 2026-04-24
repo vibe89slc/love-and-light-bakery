@@ -12,12 +12,15 @@
 
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /** Viewport heights of scroll per push→fade chapter (higher = slower, harder to skip). */
-  const SCROLL_STRETCH = 2.75;
-  /** Wheel delta dampening (lower = more scroll gesture per pixel moved). */
-  const WHEEL_MULTIPLIER = 0.38;
-  /** Scroll position lerps toward target each frame (lower = silkier, slower catch-up). */
-  const SMOOTH_EASE = 0.082;
+  /** Viewport heights of scroll per push→fade chapter (higher = more wheel travel per chapter). */
+  const SCROLL_STRETCH = 1.82;
+  /** Wheel delta dampening (higher = less physical scrolling to move). */
+  const WHEEL_MULTIPLIER = 0.52;
+  /** Base lerp toward targetY each frame (snap uses adaptive ease below). */
+  const SMOOTH_EASE = 0.084;
+  /** Stronger lerp when far from target (smooth snap glide). */
+  const SMOOTH_EASE_MID = 0.11;
+  const SMOOTH_EASE_FAR = 0.135;
   /** Ignore tiny differences at rest. */
   const SCROLL_EPS = 0.45;
 
@@ -28,9 +31,9 @@
   let fadePhaseKey = null;
   let fadeStartedAt = 0;
   const TEXT_FADE_MS = 960;
-  /** Snap to chapter starts after wheel / touch so you never rest mid-transition. */
-  const WHEEL_SNAP_DEBOUNCE_MS = 140;
-  const SCROLL_SNAP_DEBOUNCE_MS = 200;
+  /** Snap to chapter starts after wheel / touch — debounce so glide finishes before we pull to a stop. */
+  const WHEEL_SNAP_DEBOUNCE_MS = 260;
+  const SCROLL_SNAP_DEBOUNCE_MS = 340;
   const AFTER_WHEEL_TOUCH_GUARD_MS = 400;
 
   let wheelSnapTimer = null;
@@ -73,17 +76,14 @@
     return best;
   }
 
-  function applyChapterSnap(fromY) {
+  /** Move scroll target to nearest chapter; rAF lerps currentY — no instant jump. */
+  function requestChapterSnap(fromY) {
     const max = getMaxScroll();
     const snap = clamp(nearestChapterSnap(fromY), 0, max);
-    if (Math.abs(snap - fromY) < 2.5) {
+    if (Math.abs(snap - fromY) < 1.25 && Math.abs(snap - targetY) < 1.25) {
       return;
     }
-    scrollSyncLock = true;
     targetY = snap;
-    currentY = snap;
-    window.scrollTo(0, snap);
-    scrollSyncLock = false;
   }
 
   function setScrollMetrics() {
@@ -264,8 +264,10 @@
     if (!prefersReduced) {
       const max = getMaxScroll();
       targetY = clamp(targetY, 0, max);
-      currentY += (targetY - currentY) * SMOOTH_EASE;
-      if (Math.abs(targetY - currentY) < SCROLL_EPS) {
+      const dist = Math.abs(targetY - currentY);
+      const ease = dist > 110 ? SMOOTH_EASE_FAR : dist > 48 ? SMOOTH_EASE_MID : SMOOTH_EASE;
+      currentY += (targetY - currentY) * ease;
+      if (dist < SCROLL_EPS) {
         currentY = targetY;
       }
       if (Math.abs(window.scrollY - currentY) > 0.35) {
@@ -288,7 +290,7 @@
       targetY = clamp(targetY, 0, max);
       currentY = clamp(currentY, 0, max);
       window.scrollTo(0, currentY);
-      applyChapterSnap(window.scrollY);
+      requestChapterSnap(window.scrollY);
     }
     update();
   });
@@ -307,7 +309,7 @@
       clearTimeout(wheelSnapTimer);
       wheelSnapTimer = setTimeout(function () {
         wheelSnapTimer = null;
-        applyChapterSnap(targetY);
+        requestChapterSnap(targetY);
       }, WHEEL_SNAP_DEBOUNCE_MS);
     },
     { passive: false }
@@ -324,7 +326,7 @@
         if (performance.now() - lastWheelTime < AFTER_WHEEL_TOUCH_GUARD_MS) {
           return;
         }
-        applyChapterSnap(window.scrollY);
+        requestChapterSnap(window.scrollY);
       }, SCROLL_SNAP_DEBOUNCE_MS);
     },
     { passive: true }
