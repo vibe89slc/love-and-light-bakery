@@ -496,10 +496,10 @@ body.page--home .top-bar--open {
 }
 
 .menu-board__note a {
-  color: var(--accent);
+  color: #5a2f24;
   font-weight: 500;
   text-decoration: underline;
-  text-decoration-color: rgba(193, 123, 110, 0.45);
+  text-decoration-color: rgba(90, 47, 36, 0.45);
   text-underline-offset: 0.18em;
 }
 
@@ -1489,13 +1489,13 @@ body.page--inner {
   font-size: 1.15rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--ink-soft);
+  color: #3a3330;
 }
 
 .menu-board__section .menu-board__note {
   margin: 0 0 1rem;
   font-size: 0.88rem;
-  color: var(--ink-soft);
+  color: #3a3330;
 }
 
 .menu-list {
@@ -1529,14 +1529,14 @@ body.page--inner {
 .menu-list__detail {
   flex: 1 1 100%;
   font-size: 0.88rem;
-  color: var(--ink-soft);
+  color: #3a3330;
   margin: 0.15rem 0 0;
 }
 
 .menu-list__price {
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  color: var(--accent);
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .menu-disclaimer {
@@ -1546,7 +1546,7 @@ body.page--inner {
   border-radius: 0.85rem;
   font-size: 0.92rem;
   line-height: 1.5;
-  color: var(--ink-soft);
+  color: #3a3330;
 }
 
 .site-footer-page {
