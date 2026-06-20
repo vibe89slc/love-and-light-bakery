@@ -255,6 +255,19 @@
       </section>
     </div>
 
+    <section class="hof" aria-labelledby="hof-title">
+      <header class="hof__head">
+        <p class="hof__eyebrow">Flavor legends</p>
+        <h2 class="hof__title" id="hof-title">Hall of Fame</h2>
+        <p class="hof__sub">A rolling lineup of the flavors that have earned their place in the case. Photos are on the way — tap through to meet each one.</p>
+      </header>
+      <!-- Cards render from the HOF_FLAVORS array in the script below — edit names, descriptions, and colors there. -->
+      <div class="hof-grid" id="hof-grid"></div>
+      <noscript>
+        <p class="hof-noscript">Our flavor lineup: Maple Cinnamon Crumb, Strawberry Cinnamon Crumb, Strawberry Glazed, Classic Glazed, Old-Fashioned, Vanilla Glazed, Classic Twist, Vanilla Twist, S’mores, Cookie Butter, Blueberry Buttercream, Classic Donut Holes, Old-Fashioned Donut Holes, Boston Cream, and the Homer. Selection rotates — the case is the truth.</p>
+      </noscript>
+    </section>
+
     <p class="menu-disclaimer"><strong>Note:</strong> Our kitchen is plant-based. Gluten friendly options will have to be pre-ordered as it is harder to prepare — tell us what you need at the counter and we’ll point to what’s safest. Ingredients and allergens can change with seasonal recipes.</p>
 
     <div class="cta-row">
@@ -286,5 +299,50 @@
   </main>
 
   <script src="nav.js"></script>
+  <script src="decor.js?v=1"></script>
+  <script src="flavors.js?v=1"></script>
+  <script>
+    /* Render the Hall of Fame grid from the shared flavor list (flavors.js). */
+    (function () {
+      var grid = document.getElementById("hof-grid");
+      if (!grid || !window.LLB) return;
+
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var frag = document.createDocumentFragment();
+
+      window.LLB.flavors.forEach(function (f, i) {
+        var card = document.createElement("article");
+        card.className = "hof-card";
+        card.style.cssText = window.LLB.flavorVars(f);
+        card.style.transitionDelay = (i % 4) * 0.06 + "s";
+        card.innerHTML =
+          '<div class="hof-card__stage">' + window.LLB.donutSVG(f, i, "hof") +
+          '<span class="hof-card__soon">\u2726 Image coming soon</span></div>' +
+          '<span class="hof-card__tag">' + f.tag + "</span>" +
+          '<h3 class="hof-card__name">' + f.name + "</h3>" +
+          '<p class="hof-card__desc">' + f.desc + "</p>";
+        frag.appendChild(card);
+      });
+
+      grid.appendChild(frag);
+
+      var cards = grid.querySelectorAll(".hof-card");
+      if (reduce || !("IntersectionObserver" in window)) {
+        cards.forEach(function (c) { c.classList.add("is-in"); });
+        return;
+      }
+
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-in");
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
+
+      cards.forEach(function (c) { io.observe(c); });
+    })();
+  </script>
 </body>
 </html>

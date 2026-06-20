@@ -271,7 +271,17 @@
           &amp;
           <span class="h1-glow">Light</span>.
         </h1>
-        <p class="lede">A bright little Sugar House shop — yeast-raised donuts, old fashioneds, and rotating glazes, plus espresso on the side. We lead with flavor first; if you’re after vegan, dairy-free, or gluten-friendly options, ask what’s on the board — the team’s happy to point you to what fits. Keep scrolling — the donut rolls through and pushes each chapter aside, then the next one fades in.</p>
+        <p class="lede">A bright little Sugar House shop — yeast-raised donuts, old fashioneds, and rotating glazes, plus espresso on the side. Plant-based menu with gluten-friendly options on request; just ask what’s on the board.</p>
+        <div class="hero-carousel" id="hero-carousel" aria-label="Featured donut flavors">
+          <p class="hero-carousel__eyebrow">A taste of the lineup</p>
+          <div class="hero-carousel__viewport">
+            <button class="hero-carousel__nav hero-carousel__nav--prev" type="button" aria-label="Previous flavor">‹</button>
+            <div class="hero-carousel__track" id="hero-carousel-track"></div>
+            <button class="hero-carousel__nav hero-carousel__nav--next" type="button" aria-label="Next flavor">›</button>
+          </div>
+          <p class="hero-carousel__caption" id="hero-carousel-caption" aria-live="polite"></p>
+          <div class="hero-carousel__dots" id="hero-carousel-dots" role="tablist" aria-label="Choose a flavor"></div>
+        </div>
         <div class="scroll-hint">
           <span class="scroll-hint__line"></span>
           <span>Sugar House · Salt Lake City</span>
@@ -363,6 +373,9 @@
   </div>
 
   <script src="nav.js"></script>
+  <script src="decor.js?v=1"></script>
   <script src="script.js"></script>
+  <script src="flavors.js?v=1"></script>
+  <script src="hero-carousel.js?v=1"></script>
 </body>
 </html>
