@@ -8,52 +8,80 @@
 (function () {
   var DOUGH = "#cb9d61"; // standard fried-dough tone
 
+  // Order is intentional — a colorful, high-contrast opener, classics at the end.
   var FLAVORS = [
+    { name: "Homer", tag: "Yeast", shape: "ring", topping: "sprinkles",
+      glaze: "#f6a6cf",
+      desc: "Pink glaze and rainbow sprinkles. The pink's from beet — cartoon icon, real ingredients." },
     { name: "Maple Cinnamon Crumb", tag: "Yeast", shape: "ring", topping: "crumb",
       glaze: "#e3a55c", crumb: "#794a23",
       desc: "Glossy maple glaze under a blanket of buttery cinnamon streusel. Cozy pancake mornings meet crunchy crumb." },
+    { name: "Lemon Poppyseed", tag: "Yeast", shape: "ring", topping: "crumb",
+      glaze: "#f4d86a", crumb: "#2c2336",
+      desc: "Zippy lemon glaze flecked with poppyseeds. Bright, buttery, and wide awake." },
+    { name: "Boston Cream", tag: "Filled", shape: "filled", topping: "none",
+      dough: "#e9c896", glaze: "#5a3620", fill: "#f7e4a0",
+      desc: "Pastry cream tucked inside, glossy chocolate on top. The weekend hero." },
+    { name: "Blueberry Buttercream", tag: "Yeast", shape: "ring", topping: "berries",
+      glaze: "#9aa9e6", crumb: "#3f4f99",
+      desc: "Swirls of blueberry buttercream on a tender base. Berry heaven, frosted." },
+    { name: "Cookie Butter", tag: "Yeast", shape: "ring", topping: "drizzle",
+      glaze: "#c98a52", drizzle: "#8c5526",
+      desc: "Spiced speculoos drizzle over a fluffy ring. A cookie's cooler cousin." },
+    { name: "Vanilla Twist", tag: "Yeast", shape: "twist", topping: "none",
+      glaze: "#f3ead8",
+      desc: "The twist, dialed up with dreamy vanilla glaze. Dangerously good." },
     { name: "Strawberry Cinnamon Crumb", tag: "Yeast", shape: "ring", topping: "crumb",
       glaze: "#f2a0bd", crumb: "#b06a30",
       desc: "Strawberry glaze meets cinnamon streusel. Sweet-and-spiced in every bite." },
+    { name: "S’mores", tag: "Yeast", shape: "ring", topping: "smores",
+      glaze: "#6b4327",
+      desc: "Toasted marshmallow, graham crunch, and chocolate — campfire, no firewood needed." },
+    { name: "Raspberry Jelly Bismarck", tag: "Filled", shape: "filled", topping: "none",
+      capped: false, glaze: "#cb9d61", fill: "#c0264b",
+      desc: "Pillowy yeast donut loaded with raspberry jam and dusted in sugar. Napkin required." },
+    { name: "Apple Fritter", tag: "Fridays", shape: "fritter", topping: "none",
+      dough: "#cf9a52", glaze: "#a8632f",
+      desc: "Craggy, caramelized, and packed with apple and cinnamon. Available Fridays or by special order." },
+    { name: "Classic Donut Holes", tag: "Bites", shape: "holes", topping: "none",
+      glaze: "#f4e3cf",
+      desc: "Two-bite glazed gems. Pop one… okay, pop six." },
     { name: "Strawberry Glazed", tag: "Yeast", shape: "ring", topping: "none",
       glaze: "#f08bb0",
       desc: "Bright strawberry glaze, no artificial dyes — just real berry blush." },
+    { name: "Maple", tag: "Yeast", shape: "ring", topping: "drizzle",
+      glaze: "#e3a55c", drizzle: "#7a4a23",
+      desc: "Glossy maple glaze with that cozy pancake-morning sweetness. Pure Sugar House comfort." },
+    { name: "Old-Fashioned Donut Holes", tag: "Bites", shape: "holes", topping: "none",
+      dough: "#d2a05a", glaze: "#e0ad68",
+      desc: "Mini old-fashioneds with crispy edges. The whole donut, bite-sized." },
+    { name: "Chocolate Old-Fashioned", tag: "Cake", shape: "ring", topping: "none",
+      dough: "#7a4a30", glaze: "#4a2c1a",
+      desc: "Deep chocolate cake donut with crisp, craggy edges. For the cocoa devotees." },
+    { name: "Chocolate Coconut", tag: "Yeast", shape: "ring", topping: "crumb",
+      glaze: "#5a3620", crumb: "#fdf3e3",
+      desc: "Rich chocolate glaze under a flurry of toasted coconut. Beachy and decadent." },
+    { name: "Old-Fashioned Churro", tag: "Cake", shape: "ring", topping: "crumb",
+      dough: "#d2a05a", glaze: "#d49a52", crumb: "#f1e2c4",
+      desc: "A craggy old-fashioned rolled in cinnamon sugar. Churro energy, donut form." },
+    { name: "Classic Twist", tag: "Yeast", shape: "twist", topping: "none",
+      glaze: "#ecc187",
+      desc: "Hand-twisted and golden — fluffy spirals with a classic glaze hug." },
+    { name: "Vanilla Glazed", tag: "Yeast", shape: "ring", topping: "none",
+      glaze: "#f6efe1",
+      desc: "Vanilla-bean glaze with a soft snow-white finish. A quiet showstopper." },
     { name: "Classic Glazed", tag: "Yeast", shape: "ring", topping: "none",
       glaze: "#f4e3cf",
       desc: "The one that started it all. Light, airy, melt-on-your-tongue glaze." },
     { name: "Old-Fashioned", tag: "Cake", shape: "ring", topping: "none",
       dough: "#d2a05a", glaze: "#e0ad68",
       desc: "Craggy, golden, and big as your hopes. Crisp edges, tender crumb." },
-    { name: "Vanilla Glazed", tag: "Yeast", shape: "ring", topping: "none",
-      glaze: "#f6efe1",
-      desc: "Vanilla-bean glaze with a soft snow-white finish. A quiet showstopper." },
-    { name: "Classic Twist", tag: "Yeast", shape: "twist", topping: "none",
-      glaze: "#ecc187",
-      desc: "Hand-twisted and golden — fluffy spirals with a classic glaze hug." },
-    { name: "Vanilla Twist", tag: "Yeast", shape: "twist", topping: "none",
-      glaze: "#f3ead8",
-      desc: "The twist, dialed up with dreamy vanilla glaze. Dangerously good." },
-    { name: "S’mores", tag: "Yeast", shape: "ring", topping: "smores",
-      glaze: "#6b4327",
-      desc: "Toasted marshmallow, graham crunch, and chocolate — campfire, no firewood needed." },
-    { name: "Cookie Butter", tag: "Yeast", shape: "ring", topping: "drizzle",
-      glaze: "#c98a52", drizzle: "#8c5526",
-      desc: "Spiced speculoos drizzle over a fluffy ring. A cookie's cooler cousin." },
-    { name: "Blueberry Buttercream", tag: "Yeast", shape: "ring", topping: "berries",
-      glaze: "#9aa9e6", crumb: "#3f4f99",
-      desc: "Swirls of blueberry buttercream on a tender base. Berry heaven, frosted." },
-    { name: "Classic Donut Holes", tag: "Bites", shape: "holes", topping: "none",
-      glaze: "#f4e3cf",
-      desc: "Two-bite glazed gems. Pop one… okay, pop six." },
-    { name: "Old-Fashioned Donut Holes", tag: "Bites", shape: "holes", topping: "none",
-      dough: "#d2a05a", glaze: "#e0ad68",
-      desc: "Mini old-fashioneds with crispy edges. The whole donut, bite-sized." },
-    { name: "Boston Cream", tag: "Filled", shape: "bun", topping: "none",
-      dough: "#e9c896", glaze: "#5a3620",
-      desc: "Pastry cream tucked inside, glossy chocolate on top. The weekend hero." },
-    { name: "Homer", tag: "Yeast", shape: "ring", topping: "sprinkles",
-      glaze: "#f6a6cf",
-      desc: "Pink glaze and rainbow sprinkles. The pink's from beet — cartoon icon, real ingredients." }
+    { name: "Sugar", tag: "Yeast", shape: "ring", topping: "crumb",
+      glaze: "#efe0c6", crumb: "#fffdf6",
+      desc: "A pillowy yeast donut tumbled in fine sugar. Simple, snowy, irresistible." },
+    { name: "Sugar Twist", tag: "Yeast", shape: "twist", topping: "none",
+      glaze: "#efe0c6",
+      desc: "Our hand-twisted spiral dusted in sugar. Twice the edges to love." }
   ];
 
   function topping(f) {
@@ -98,7 +126,11 @@
   function donutSVG(f, i, prefix) {
     prefix = prefix || "llb";
     var dough = f.dough || DOUGH;
-    var shadow = '<ellipse class="llb-donut__shadow" cx="60" cy="108" rx="' + (f.shape === "holes" ? 40 : 32) + '" ry="6"/>';
+    var srx = f.shape === "holes" ? 40
+      : f.shape === "fritter" ? 37
+      : (f.shape === "filled" || f.shape === "bun") ? 40
+      : 32;
+    var shadow = '<ellipse class="llb-donut__shadow" cx="60" cy="108" rx="' + srx + '" ry="6"/>';
     var body;
 
     if (f.shape === "holes") {
@@ -108,6 +140,24 @@
           '<ellipse cx="' + (cx - 6) + '" cy="' + (cy - 7) + '" rx="6" ry="3.4" fill="#fff" opacity=".4"/>';
       };
       body = "<g>" + hole(40, 70) + hole(82, 70) + hole(61, 46) + "</g>";
+    } else if (f.shape === "fritter") {
+      // Lumpy, craggy fried mass with glaze drizzle and fruit specks.
+      var lumps = [[60, 62, 30], [40, 54, 18], [80, 54, 18], [44, 80, 17], [78, 80, 17], [60, 42, 16], [60, 86, 15], [30, 66, 12], [90, 66, 12]];
+      var base = lumps.map(function (l) {
+        return '<circle cx="' + l[0] + '" cy="' + l[1] + '" r="' + l[2] + '" fill="var(--dough)"/>';
+      }).join("");
+      var dark = [[48, 60, 9], [72, 68, 8], [58, 76, 8], [66, 52, 7], [40, 72, 6]].map(function (l) {
+        return '<circle cx="' + l[0] + '" cy="' + l[1] + '" r="' + l[2] + '" fill="var(--glaze-a)" opacity=".5"/>';
+      }).join("");
+      var specks = [[52, 50], [70, 58], [46, 72], [64, 66], [78, 72], [54, 84]].map(function (p) {
+        return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.4" fill="#7a4a23" opacity=".7"/>';
+      }).join("");
+      var glaze = '<g stroke="#fbe7d2" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".92">' +
+        '<path d="M34 52 q12 -6 22 2 q12 8 26 -2"/>' +
+        '<path d="M32 66 q14 8 26 0 q12 -6 28 4"/>' +
+        '<path d="M40 80 q12 -6 22 2 q10 6 22 -2"/></g>';
+      var hi = '<ellipse cx="48" cy="48" rx="7" ry="4" fill="#fff" opacity=".18"/>';
+      body = "<g>" + base + dark + specks + glaze + hi + "</g>";
     } else if (f.shape === "twist") {
       var grooves = "";
       for (var y = 28; y <= 92; y += 12) {
@@ -116,11 +166,31 @@
       body = '<g><rect x="42" y="16" width="36" height="88" rx="18" fill="var(--dough)"/>' +
         '<rect x="44.5" y="19" width="31" height="82" rx="15.5" fill="var(--glaze-a)"/>' +
         grooves + '<ellipse cx="55" cy="34" rx="6" ry="11" fill="#fff" opacity=".26"/></g>';
-    } else if (f.shape === "bun") {
-      body = '<g><circle cx="60" cy="63" r="42" fill="var(--dough)"/>' +
-        '<path d="M20 60 a40 40 0 0 1 80 0 Z" fill="var(--glaze-a)"/>' +
-        '<ellipse cx="46" cy="40" rx="14" ry="7" fill="#fff" opacity=".22"/>' +
-        '<path d="M28 60 q7 8 15 1 q7 8 15 1 q7 8 15 1 q7 8 15 0" stroke="#f7e4c4" stroke-width="3" fill="none" opacity=".75"/></g>';
+    } else if (f.shape === "filled" || f.shape === "bun") {
+      // Plump, slightly-flattened filled donut: dough body + filling peeking out.
+      // capped (default) adds an icing cap; capped:false leaves bare dough with
+      // a light dusting of sugar (e.g. a jelly bismarck).
+      var capped = f.capped !== false;
+      var s = '<ellipse cx="60" cy="68" rx="44" ry="34" fill="var(--dough)"/>' +
+        '<ellipse cx="60" cy="83" rx="40" ry="17" fill="#000" opacity=".06"/>' +
+        '<ellipse cx="100" cy="72" rx="7" ry="9" fill="var(--fill)"/>' +
+        '<ellipse cx="99" cy="69" rx="2.4" ry="3.2" fill="#fff" opacity=".45"/>';
+      if (capped) {
+        s += '<ellipse cx="60" cy="52" rx="42" ry="26" fill="var(--glaze-a)"/>' +
+          '<circle cx="26" cy="62" r="7.5" fill="var(--glaze-a)"/>' +
+          '<circle cx="46" cy="70" r="6.5" fill="var(--glaze-a)"/>' +
+          '<circle cx="68" cy="70" r="7.5" fill="var(--glaze-a)"/>' +
+          '<circle cx="90" cy="64" r="6.5" fill="var(--glaze-a)"/>' +
+          '<ellipse cx="46" cy="42" rx="14" ry="6.5" fill="#fff" opacity=".22"/>';
+      } else {
+        s += '<ellipse cx="50" cy="50" rx="16" ry="8" fill="#fff" opacity=".12"/>';
+        var sugar = [[38, 48], [52, 42], [66, 46], [80, 50], [46, 58], [60, 54],
+          [74, 60], [34, 60], [88, 62], [54, 64], [70, 70], [44, 70], [62, 44], [82, 42]];
+        s += sugar.map(function (p) {
+          return '<rect x="' + p[0] + '" y="' + p[1] + '" width="2.6" height="2.6" rx="0.8" fill="#fff" opacity="0.85" transform="rotate(22 ' + p[0] + " " + p[1] + ')"/>';
+        }).join("");
+      }
+      body = "<g>" + s + "</g>";
     } else {
       var id = prefix + "-hole-" + i;
       var drips = [36, 52, 68, 84].map(function (cx) {
@@ -146,7 +216,8 @@
     return "--dough:" + (f.dough || DOUGH) +
       ";--glaze-a:" + f.glaze +
       ";--drizzle:" + (f.drizzle || f.glaze) +
-      ";--crumb:" + (f.crumb || f.drizzle || "#9c5f2c");
+      ";--crumb:" + (f.crumb || f.drizzle || "#9c5f2c") +
+      ";--fill:" + (f.fill || "#f7e4a0");
   }
 
   window.LLB = { flavors: FLAVORS, donutSVG: donutSVG, flavorVars: flavorVars, DOUGH: DOUGH };
