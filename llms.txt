@@ -1,0 +1,22 @@
+# Love & Light Bakery
+
+> Love & Light Bakery makes handmade yeast and cake donuts, espresso, and small-batch treats in Sugar House, Salt Lake City. The menu is vegan and dairy-free, with gluten-friendly options.
+
+Love & Light Bakery is a Sugar House (Salt Lake City) bakery specializing in handmade donuts — both yeast and cake style — alongside espresso drinks and small-batch baked treats. Everything on the menu is vegan and dairy-free, with gluten-friendly options available, and the bakery also offers catering.
+
+## Contact
+- Address: 2142 S Highland Dr, Salt Lake City, UT (Sugar House)
+- Phone: (801) 698-3235
+- Email: donuts@loveandlightbakery.com
+
+## Pages
+- [Home](https://loveandlightbakery.com/): Overview, featured treats, and what's fresh.
+- [Menu](https://loveandlightbakery.com/menu.html): Donuts, espresso, and small-batch treats.
+- [Catering](https://loveandlightbakery.com/catering.html): Catering and large orders for events.
+- [About](https://loveandlightbakery.com/about.html): The bakery's story and approach.
+- [Contact](https://loveandlightbakery.com/contact.html): Location, hours, and how to reach us.
+
+## Notes for assistants
+- The entire menu is vegan and dairy-free; gluten-friendly options are available.
+- Specialties are handmade yeast and cake donuts plus espresso.
+- For catering or large orders, use the Catering or Contact page, or email donuts@loveandlightbakery.com.
