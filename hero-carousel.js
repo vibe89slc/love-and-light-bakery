@@ -14,6 +14,7 @@
 
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var AUTOPLAY_MS = 3400;
+  var SHELF_REACH = 5;          // cells shown either side of the active one (desktop shelf)
   var active = 0;
   var timer = null;
 
@@ -22,8 +23,12 @@
     slide.className = "hero-flavor";
     slide.style.cssText = window.LLB.flavorVars(f);
     slide.innerHTML =
-      '<div class="hero-flavor__stage">' + window.LLB.donutSVG(f, i, "hero") +
-      '<span class="hero-flavor__soon">✦ Image coming soon</span></div>';
+      '<div class="hero-flavor__stage">' + window.LLB.donutSVG(f, i, "hero") + "</div>" +
+      '<span class="hero-flavor__name">' + f.name + "</span>" +
+      '<span class="hero-flavor__tag">' + f.tag + "</span>";
+    slide.addEventListener("click", function () {
+      if (i !== active) { go(i); restart(); }
+    });
     track.appendChild(slide);
     return slide;
   });
@@ -49,6 +54,11 @@
       // wrap to nearest direction so neighbors animate the short way
       if (rel > n / 2) rel -= n;
       if (rel < -n / 2) rel += n;
+
+      // Desktop shelf: cells sit at rel * cell width; anything past the
+      // visible run is parked without a transition so it never ghosts across.
+      slide.style.setProperty("--rel", rel);
+      slide.classList.toggle("is-off", Math.abs(rel) > SHELF_REACH);
 
       slide.classList.remove("is-active", "is-prev", "is-next", "is-far-prev", "is-far-next");
       if (rel === 0) slide.classList.add("is-active");

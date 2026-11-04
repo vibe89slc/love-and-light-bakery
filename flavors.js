@@ -208,7 +208,7 @@
     }
 
     return '<svg class="llb-donut" viewBox="0 0 120 120" role="img" aria-label="' +
-      f.name + ' donut — image coming soon">' + shadow + body + "</svg>";
+      f.name + ' donut">' + shadow + body + "</svg>";
   }
 
   /* Inline CSS custom properties that theme one donut/card. */

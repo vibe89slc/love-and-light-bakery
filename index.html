@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body class="page--home">
   <div class="ambient" aria-hidden="true">
@@ -150,6 +150,7 @@
     <div class="story-pin">
     <div class="backdrop-stack" id="backdrop-stack" aria-hidden="true">
       <div class="backdrop-slide backdrop-slide--hero"></div>
+      <div class="backdrop-slide backdrop-slide--menu"></div>
       <div class="backdrop-slide backdrop-slide--story"></div>
       <div class="backdrop-slide backdrop-slide--reviews"></div>
       <div class="backdrop-slide backdrop-slide--visit"></div>
@@ -377,20 +378,46 @@
           <span class="h1-glow">Light</span>.
         </h1>
         <p class="lede">A bright little Sugar House shop — yeast-raised donuts, old fashioneds, and rotating glazes, plus espresso on the side. Plant-based menu with gluten-friendly options on request; just ask what’s on the board.</p>
-        <div class="hero-carousel" id="hero-carousel" aria-label="Featured donut flavors">
-          <p class="hero-carousel__eyebrow">A taste of the lineup</p>
-          <div class="hero-carousel__viewport">
-            <button class="hero-carousel__nav hero-carousel__nav--prev" type="button" aria-label="Previous flavor">‹</button>
-            <div class="hero-carousel__track" id="hero-carousel-track"></div>
-            <button class="hero-carousel__nav hero-carousel__nav--next" type="button" aria-label="Next flavor">›</button>
-          </div>
-          <p class="hero-carousel__caption" id="hero-carousel-caption" aria-live="polite"></p>
-          <div class="hero-carousel__dots" id="hero-carousel-dots" role="tablist" aria-label="Choose a flavor"></div>
+      </div>
+      <div class="hero-carousel" id="hero-carousel" aria-label="Featured donut flavors">
+        <p class="hero-carousel__eyebrow">A taste of the lineup</p>
+        <div class="hero-carousel__viewport">
+          <button class="hero-carousel__nav hero-carousel__nav--prev" type="button" aria-label="Previous flavor">‹</button>
+          <div class="hero-carousel__track" id="hero-carousel-track"></div>
+          <button class="hero-carousel__nav hero-carousel__nav--next" type="button" aria-label="Next flavor">›</button>
         </div>
+        <p class="hero-carousel__caption" id="hero-carousel-caption" aria-live="polite"></p>
+        <div class="hero-carousel__dots" id="hero-carousel-dots" role="tablist" aria-label="Choose a flavor"></div>
         <div class="scroll-hint">
           <span class="scroll-hint__line"></span>
           <span>Sugar House · Salt Lake City</span>
         </div>
+      </div>
+    </section>
+
+    <section class="slide panel panel--menu" id="menu" aria-labelledby="menu-title">
+      <div class="panel__inner panel__inner--machine">
+        <header class="machine__head">
+          <p class="eyebrow">The lineup</p>
+          <h2 id="menu-title">Pick your flavors</h2>
+          <p class="machine__sub">Tap a donut to meet it. The case rotates weekly, so what’s on the board that day is the truth.</p>
+        </header>
+        <div class="machine">
+          <article class="machine__pick" id="machine-pick">
+            <div class="machine__pick-stage" id="machine-pick-stage"></div>
+            <span class="machine__pick-tag" id="machine-pick-tag"></span>
+            <h3 class="machine__pick-name" id="machine-pick-name"></h3>
+            <p class="machine__pick-desc" id="machine-pick-desc"></p>
+            <p class="machine__pick-price" id="machine-pick-price"></p>
+            <div class="cta-row">
+              <a class="cta cta--button" href="menu.html">Full menu &amp; espresso bar</a>
+            </div>
+          </article>
+          <div class="machine__grid" id="machine-grid" aria-label="Flavors"></div>
+        </div>
+        <noscript>
+          <p class="hof-noscript">Our flavor lineup: Homer, Maple Cinnamon Crumb, Lemon Poppyseed, Boston Cream, Blueberry Buttercream, Cookie Butter, Vanilla Twist, Strawberry Cinnamon Crumb, S’mores, Raspberry Jelly Bismarck, Apple Fritter, Classic Donut Holes, Strawberry Glazed, Maple, Old-Fashioned Donut Holes, Chocolate Old-Fashioned, Chocolate Coconut, Old-Fashioned Churro, Classic Twist, Vanilla Glazed, Classic Glazed, Old-Fashioned, Sugar, and Sugar Twist. See the <a href="menu.html">full menu</a>.</p>
+        </noscript>
       </div>
     </section>
 
@@ -480,9 +507,10 @@
 
   <script src="nav.js"></script>
   <script src="decor.js?v=1"></script>
-  <script src="script.js?v=3"></script>
-  <script src="donut-3d.js?v=1"></script>
-  <script src="flavors.js?v=6"></script>
-  <script src="hero-carousel.js?v=1"></script>
+  <script src="script.js?v=6"></script>
+  <script src="donut-3d.js?v=3"></script>
+  <script src="flavors.js?v=7"></script>
+  <script src="hero-carousel.js?v=4"></script>
+  <script src="machine.js?v=1"></script>
 </body>
 </html>

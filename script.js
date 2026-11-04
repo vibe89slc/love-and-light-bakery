@@ -40,7 +40,13 @@
   var REVEAL_NEAR = 0.12;       // chapter-distance where copy is fully in
   var REVEAL_FAR = 0.62;        // chapter-distance where copy is fully out
   var DONUT_VISIBLE_FRAC = 0.44;
+  var PEEK_VISIBLE_FRAC = 0.16;
   var ROLL_DEG_PER_CHAPTER = 540;
+  var HERO_MAG_MIN = 1.2;       // giant opening donut, as a multiple of --donut-size
+  var HERO_MAG_MAX = 1.75;
+  var HERO_Y_VH = -0.05;        // opening donut sits a touch above center (shelf runs along the bottom)
+  var INTRO_MS = 1700;          // roll-in from off-screen on first paint
+  var INTRO_ROLL_DEG = 420;
   var MOBILE_ROT_PER_PX = 0.48;
   var MOBILE_DRIFT_PER_PX = -0.06;
 
@@ -52,6 +58,8 @@
   var segmentPx = 0;
   var mobileRaf = null;
   var observer = null;
+  var introDone = false;
+  var introStart = null;        // performance.now() when the roll-in began, null when done/skipped
 
   function clamp(n, a, b) { return Math.min(b, Math.max(a, n)); }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -62,13 +70,28 @@
   }
 
   /* Donut center-x when parked on the left vs right edge (44% of it stays on-screen). */
-  function parkX(side) {
+  function parkX(side, frac) {
     var half = donut.getBoundingClientRect().width / 2;
     if (half < 6) half = Math.min(window.innerWidth * 0.3, 300);
-    var visible = DONUT_VISIBLE_FRAC * 2 * half;
+    var visible = (frac || DONUT_VISIBLE_FRAC) * 2 * half;
     return side === "left" ? visible - half : window.innerWidth - visible + half;
   }
   function chapterSide(k) { return k % 2 === 0 ? "right" : "left"; }
+  /* The flavor machine (chapter 1) needs its width: the donut only peeks in from the edge there. */
+  function chapterPark(k) { return parkX(chapterSide(k), k === 1 ? PEEK_VISIBLE_FRAC : DONUT_VISIBLE_FRAC); }
+  function easeOutCubic(t) { t = clamp(t, 0, 1); return 1 - Math.pow(1 - t, 3); }
+
+  /* Opening chapter: the donut is huge and hangs off the right edge beside the copy column. */
+  function heroMag() {
+    return clamp((window.innerWidth - 560) / 560, HERO_MAG_MIN, HERO_MAG_MAX);
+  }
+  function heroX(mag) {
+    var half = donut.getBoundingClientRect().width / 2;
+    if (half < 6) half = Math.min(window.innerWidth * 0.3, 300);
+    var diam = 2 * half * mag;
+    var visible = 0.58 + 0.14 * clamp((window.innerWidth - 1000) / 600, 0, 1);
+    return window.innerWidth - visible * diam + diam / 2;
+  }
 
   /* ---------- layout ---------- */
   function layoutStory() {
@@ -81,6 +104,8 @@
   function clearStory() {
     story.style.removeProperty("--story-h");
     track.style.removeProperty("--track-x");
+    donut.style.removeProperty("--donut-mag");
+    introStart = null;
     slides.forEach(function (s) { s.inert = false; s.removeAttribute("aria-hidden"); });
     inners.forEach(function (el) { if (el) { el.style.opacity = ""; el.style.transform = ""; } });
     backdrops.forEach(function (b) { b.style.opacity = ""; });
@@ -118,15 +143,32 @@
       if (backdrops[k]) backdrops[k].style.opacity = (1 - clamp(d, 0, 1)).toFixed(3);
     });
 
-    /* Donut: between chapters it crosses from one park to the other, rolling as it goes. */
+    /* Donut: between chapters it crosses from one park to the other, rolling as it goes.
+       Chapter 0 is the giant: it shrinks to normal size as it rolls into chapter 1. */
     var seg = Math.min(Math.floor(pos), travels - 1);
     var f = clamp(pos - seg, 0, 1);
-    var x = lerp(parkX(chapterSide(seg)), parkX(chapterSide(seg + 1)), f);
+    var mag0 = heroMag();
+    var from = seg === 0 ? heroX(mag0) : chapterPark(seg);
+    var x = lerp(from, chapterPark(seg + 1), f);
+    var mag = seg === 0 ? lerp(mag0, 1, f) : 1;
+    var y = seg === 0 ? lerp(HERO_Y_VH * vh, 0, f) : 0;
     var rot = 0;
     for (var i = 0; i < seg; i += 1) rot += (i % 2 === 0 ? -1 : 1) * ROLL_DEG_PER_CHAPTER;
     rot += (seg % 2 === 0 ? -1 : 1) * ROLL_DEG_PER_CHAPTER * f;
+
+    /* First paint: roll in from past the right edge, fading out once the visitor scrolls. */
+    if (introStart !== null) {
+      var e = easeOutCubic((performance.now() - introStart) / INTRO_MS);
+      var w = (1 - e) * (1 - clamp(pos * 3, 0, 1));
+      if (e >= 1) introStart = null;
+      x += w * (vw + mag0 * (donut.getBoundingClientRect().width || 600) * 0.6 - heroX(mag0));
+      rot -= w * INTRO_ROLL_DEG;
+    }
+
     donut.style.setProperty("--donut-x", x.toFixed(2) + "px");
     donut.style.setProperty("--donut-rot", rot.toFixed(2) + "deg");
+    donut.style.setProperty("--donut-mag", mag.toFixed(4));
+    donut.style.setProperty("--donut-y", y.toFixed(1) + "px");
 
     /* Slow layers. */
     var p = pos / travels;
@@ -142,11 +184,12 @@
     rafId = null;
     posTarget = targetFromScroll();
     var diff = posTarget - pos;
-    if (Math.abs(diff) < 0.0004) {
+    if (Math.abs(diff) < 0.0004 && introStart === null) {
       pos = posTarget;
       renderStory();
       return; // settled; next scroll event wakes us
     }
+    if (Math.abs(diff) < 0.0004) pos = posTarget;
     pos += diff * SMOOTH;
     renderStory();
     rafId = window.requestAnimationFrame(frame);
@@ -202,7 +245,12 @@
       inners.forEach(function (el) { if (el) el.classList.remove("is-in"); });
       layoutStory();
       pos = posTarget = targetFromScroll();
+      if (window.scrollY < 8 && introStart === null && !introDone) {
+        introStart = performance.now();
+        introDone = true;
+      }
       renderStory();
+      if (introStart !== null) wake();
     } else {
       body.classList.add("is-mobile-stack");
       body.classList.remove("is-push-stage");

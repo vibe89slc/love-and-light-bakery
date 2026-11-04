@@ -259,7 +259,7 @@
       <header class="hof__head">
         <p class="hof__eyebrow">Flavor legends</p>
         <h2 class="hof__title" id="hof-title">Hall of Fame</h2>
-        <p class="hof__sub">A rolling lineup of the flavors that have earned their place in the case. Photos are on the way — tap through to meet each one.</p>
+        <p class="hof__sub">A rolling lineup of the flavors that have earned their place in the case.</p>
       </header>
       <!-- Cards render from the HOF_FLAVORS array in the script below — edit names, descriptions, and colors there. -->
       <div class="hof-grid" id="hof-grid"></div>
@@ -300,7 +300,7 @@
 
   <script src="nav.js"></script>
   <script src="decor.js?v=1"></script>
-  <script src="flavors.js?v=6"></script>
+  <script src="flavors.js?v=7"></script>
   <script>
     /* Render the Hall of Fame grid from the shared flavor list (flavors.js). */
     (function () {
@@ -316,8 +316,7 @@
         card.style.cssText = window.LLB.flavorVars(f);
         card.style.transitionDelay = (i % 4) * 0.06 + "s";
         card.innerHTML =
-          '<div class="hof-card__stage">' + window.LLB.donutSVG(f, i, "hof") +
-          '<span class="hof-card__soon">\u2726 Image coming soon</span></div>' +
+          '<div class="hof-card__stage">' + window.LLB.donutSVG(f, i, "hof") + "</div>" +
           '<span class="hof-card__tag">' + f.tag + "</span>" +
           '<h3 class="hof-card__name">' + f.name + "</h3>" +
           '<p class="hof-card__desc">' + f.desc + "</p>";

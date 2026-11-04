@@ -14,6 +14,7 @@
   var DESKTOP_MIN_PX = 900;
   var LEAN_PER_PX = 0.95;      // deg of rotateY per px/frame of travel
   var LEAN_MAX = 26;           // deg
+  var IDLE_DEG_PER_S = 2.4;
   var SWELL_MAX = 0.24;        // +24% size at full speed
   var SWELL_SPEED_PX = 26;     // px/frame that counts as "full speed"
   var POINTER_TILT = 11;       // deg at viewport edges
@@ -51,6 +52,7 @@
     donut.style.setProperty("--donut-tx", "0deg");
     donut.style.setProperty("--donut-scale", "1");
     donut.style.setProperty("--donut-lift", "0px");
+    donut.style.setProperty("--donut-idle", "0deg");
     lean = 0; leanVel = 0; scale = 1; tiltX = 0; tiltY = 0; vel = 0; lastX = null;
   }
 
@@ -106,6 +108,8 @@
       donut.style.setProperty("--donut-tx", (tiltX + idleX).toFixed(2) + "deg");
       donut.style.setProperty("--donut-scale", scale.toFixed(4));
       donut.style.setProperty("--donut-lift", lift.toFixed(2) + "px");
+      // Slow idle turn so the parked donut never reads as a still image.
+      donut.style.setProperty("--donut-idle", ((t * IDLE_DEG_PER_S) % 360).toFixed(2) + "deg");
     }
     window.requestAnimationFrame(frame);
   }
