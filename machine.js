@@ -54,11 +54,45 @@
     desc.textContent = f.desc;
     price.textContent = priceFor(f);
 
-    /* Phones: the card sits above the wall; bring it back into view when it has scrolled off. */
-    if (byUser && window.innerWidth < 900 && pick.getBoundingClientRect().top < 56) {
-      pick.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }
+
+  /* Title reveal: fires once, when the section header has scrolled into view. */
+  var head = document.getElementById("machine-head");
+  if (head) {
+    if (reduce || !("IntersectionObserver" in window)) {
+      head.classList.add("is-in");
+    } else {
+      var headIo = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) { head.classList.add("is-in"); headIo.disconnect(); }
+        });
+      }, { rootMargin: "0px 0px -18% 0px", threshold: 0.5 });
+      headIo.observe(head);
     }
   }
+
+  /* Phones: the nav bar slides away as the section title arrives and stays away
+     while the card is pinned over the wall; the page never scrolls on its own. */
+  var stuck = false;
+  var stuckRaf = null;
+  function checkStuck() {
+    stuckRaf = null;
+    var next = false;
+    if (window.innerWidth < 900) {
+      var top = (head || pick).getBoundingClientRect().top;
+      var wall = grid.getBoundingClientRect();
+      var card = pick.getBoundingClientRect();
+      next = top <= window.innerHeight * 0.42 && wall.bottom > card.bottom + 24;
+    }
+    if (next !== stuck) {
+      stuck = next;
+      document.body.classList.toggle("is-machine-stuck", stuck);
+    }
+  }
+  function onScroll() { if (stuckRaf === null) stuckRaf = window.requestAnimationFrame(checkStuck); }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+  checkStuck();
 
   /* Arrow keys walk the wall. */
   grid.addEventListener("keydown", function (e) {

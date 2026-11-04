@@ -131,7 +131,9 @@ body {
   overflow: visible;
   transition:
     background-color 0.35s var(--ease-out),
-    box-shadow 0.35s var(--ease-out);
+    box-shadow 0.35s var(--ease-out),
+    transform 0.4s var(--ease-out),
+    opacity 0.3s ease;
 }
 
 /* Solid bar only on inner pages (home/index stays transparent over the hero). */
@@ -653,7 +655,7 @@ body.page--home .top-bar--open {
   margin-top: 1.25rem;
 }
 
-.cta--button {
+.cta.cta--button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -667,7 +669,7 @@ body.page--home .top-bar--open {
   margin-top: 0;
 }
 
-.cta--button:hover {
+.cta.cta--button:hover {
   color: var(--cream) !important;
   background: #3d332e;
 }
@@ -780,7 +782,7 @@ body.page--home .top-bar--open {
   }
 }
 
-.cta--ghost {
+.cta.cta--ghost {
   border-bottom-color: rgba(44, 36, 32, 0.25);
   margin-top: 0;
 }
@@ -1701,9 +1703,11 @@ body.page--inner {
   margin: 1.9rem auto 0;
   width: 100%;
   max-width: 30rem;
+  text-align: center;
 }
 
-.hero-carousel__eyebrow {
+/* .panel p would otherwise size this like body copy. */
+.panel .hero-carousel__eyebrow {
   margin: 0 0 0.4rem;
   font-size: 0.7rem;
   font-weight: 600;
@@ -2052,6 +2056,88 @@ body.page--inner {
   margin-bottom: 0.4rem;
 }
 
+/* Title reveal: eyebrow tracks open, words rise in turn, "flavors" wears a
+   moving glaze with a drizzle that draws itself. Triggered by .is-in (machine.js). */
+.machine__head .eyebrow {
+  opacity: 0;
+  letter-spacing: 0.02em;
+  transition: opacity 0.7s var(--ease-out), letter-spacing 1.1s var(--ease-out);
+}
+
+.machine__head .rise {
+  display: inline-block;
+  opacity: 0;
+  transform: translate3d(0, 0.6em, 0) rotate(2.5deg);
+  transform-origin: 0 100%;
+  transition:
+    opacity 0.55s var(--ease-out),
+    transform 0.8s var(--ease-out);
+  transition-delay: calc(0.12s + var(--i, 0) * 0.13s);
+}
+
+.machine__head .machine__sub {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  transition: opacity 0.7s var(--ease-out) 0.55s, transform 0.7s var(--ease-out) 0.55s;
+}
+
+.machine__head.is-in .eyebrow {
+  opacity: 1;
+  letter-spacing: 0.14em;
+}
+
+.machine__head.is-in .rise,
+.machine__head.is-in .machine__sub {
+  opacity: 1;
+  transform: none;
+}
+
+.rise--glaze {
+  position: relative;
+  padding-bottom: 0.08em;
+  background: linear-gradient(100deg, #e87fb0 0%, #9f8cff 48%, #f0a96a 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: hof-title 9s ease-in-out infinite;
+}
+
+.drizzle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.3em;
+  width: 100%;
+  height: 0.38em;
+  overflow: visible;
+}
+
+.drizzle path {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 1.2s var(--ease-out) 0.75s;
+}
+
+.machine__head.is-in .drizzle path {
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .machine__head .eyebrow,
+  .machine__head .rise,
+  .machine__head .machine__sub {
+    opacity: 1;
+    transform: none;
+    letter-spacing: 0.14em;
+    transition: none;
+  }
+
+  .machine__head .rise { letter-spacing: normal; }
+  .rise--glaze { animation: none; }
+  .drizzle path { stroke-dashoffset: 0; transition: none; }
+}
+
 .machine__sub {
   max-width: 34rem;
   margin: 0 auto !important;
@@ -2198,12 +2284,79 @@ body.page--inner {
 @media (max-width: 899px) {
   .machine {
     grid-template-columns: 1fr;
-    gap: 1.25rem;
+    gap: 1rem;
   }
 
+  /* Compact card: donut left, words right, one button under. It sticks to the
+     top of the screen while the wall scrolls up behind it. */
   .machine__pick {
-    position: relative;
-    top: auto;
+    position: sticky;
+    top: 0.5rem;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 104px 1fr;
+    grid-template-areas:
+      "stage tag"
+      "stage name"
+      "stage desc"
+      "stage price"
+      "ctas ctas";
+    column-gap: 0.9rem;
+    align-items: start;
+    text-align: left;
+    padding: 0.9rem 1rem 0.95rem;
+    border-radius: 1.3rem;
+    background: rgba(255, 255, 255, 0.9);
+    -webkit-backdrop-filter: blur(22px) saturate(1.2);
+    backdrop-filter: blur(22px) saturate(1.2);
+    box-shadow: 0 14px 36px rgba(44, 36, 32, 0.12);
+  }
+
+  .machine__pick-stage {
+    grid-area: stage;
+    height: 104px;
+  }
+
+  .machine__pick-stage .llb-donut {
+    width: 100px;
+    height: 100px;
+  }
+
+  .machine__pick-tag { grid-area: tag; justify-self: start; margin-bottom: 0.3rem; }
+  .machine__pick-name { grid-area: name; font-size: 1.25rem; margin-bottom: 0.25rem; }
+  .machine__pick-desc { grid-area: desc; font-size: 0.86rem !important; line-height: 1.4 !important; margin-bottom: 0.4rem !important; }
+  .machine__pick-price { grid-area: price; font-size: 0.76rem !important; margin: 0 !important; }
+
+  .machine__pick .cta-row {
+    grid-area: ctas;
+    margin-top: 0.8rem;
+    justify-content: stretch;
+  }
+
+  .machine__pick .cta.cta--button {
+    flex: 1 1 auto;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+
+  /* Soft band under the card so the wall fades as it slides behind. */
+  .machine__pick::after {
+    content: "";
+    position: absolute;
+    left: 0.5rem;
+    right: 0.5rem;
+    top: 100%;
+    height: 2.6rem;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(250, 246, 240, 0.9) 0%, rgba(250, 246, 240, 0) 100%);
+    -webkit-mask-image: linear-gradient(180deg, #000, transparent);
+    mask-image: linear-gradient(180deg, #000, transparent);
+  }
+
+  /* While the card is stuck the top bar slides away to give the wall the room. */
+  body.is-machine-stuck .top-bar:not(.top-bar--open) {
+    transform: translateY(-120%);
+    opacity: 0;
   }
 
   .machine__grid {

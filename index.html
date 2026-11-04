@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=12" />
 </head>
 <body class="page--home">
   <div class="ambient" aria-hidden="true">
@@ -380,7 +380,7 @@
         <p class="lede">A bright little Sugar House shop — yeast-raised donuts, old fashioneds, and rotating glazes, plus espresso on the side. Plant-based menu with gluten-friendly options on request; just ask what’s on the board.</p>
       </div>
       <div class="hero-carousel" id="hero-carousel" aria-label="Featured donut flavors">
-        <p class="hero-carousel__eyebrow">A taste of the lineup</p>
+        <p class="hero-carousel__eyebrow">Fresh from the case</p>
         <div class="hero-carousel__viewport">
           <button class="hero-carousel__nav hero-carousel__nav--prev" type="button" aria-label="Previous flavor">‹</button>
           <div class="hero-carousel__track" id="hero-carousel-track"></div>
@@ -397,9 +397,9 @@
 
     <section class="slide panel panel--menu" id="menu" aria-labelledby="menu-title">
       <div class="panel__inner panel__inner--machine">
-        <header class="machine__head">
+        <header class="machine__head" id="machine-head">
           <p class="eyebrow">The lineup</p>
-          <h2 id="menu-title">Pick your flavors</h2>
+          <h2 id="menu-title"><span class="rise" style="--i: 0">Pick</span> <span class="rise" style="--i: 1">your</span> <span class="rise rise--glaze" style="--i: 2">flavors<svg class="drizzle" viewBox="0 0 120 16" aria-hidden="true" focusable="false"><defs><linearGradient id="drizzleGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e87fb0" /><stop offset="0.5" stop-color="#9f8cff" /><stop offset="1" stop-color="#f0a96a" /></linearGradient></defs><path d="M3 9 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q7 6 14 1" fill="none" stroke="url(#drizzleGrad)" stroke-width="3.2" stroke-linecap="round" pathLength="100" /></svg></span></h2>
           <p class="machine__sub">Tap a donut to meet it. The case rotates weekly, so what’s on the board that day is the truth.</p>
         </header>
         <div class="machine">
@@ -511,6 +511,6 @@
   <script src="donut-3d.js?v=3"></script>
   <script src="flavors.js?v=7"></script>
   <script src="hero-carousel.js?v=4"></script>
-  <script src="machine.js?v=1"></script>
+  <script src="machine.js?v=3"></script>
 </body>
 </html>
