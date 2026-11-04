@@ -20,7 +20,7 @@
     switch (f.tag) {
       case "Filled": return f.name === "Boston Cream" ? "$5 each" : "$4.75 each";
       case "Fridays": return "$5.25 · Fritter Friday only";
-      case "Bites": return "Sold by the bag — ask at the counter";
+      case "Bites": return "6 for $4.44 · 12 for $7.77";
       default: return "$5.25 each · half dozen $31.50 · dozen $59.85";
     }
   }
