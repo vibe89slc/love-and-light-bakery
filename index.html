@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=13" />
+  <link rel="stylesheet" href="styles.css?v=14" />
 </head>
 <body class="page--home">
   <div class="ambient" aria-hidden="true">
@@ -439,28 +439,18 @@
     <section class="slide panel panel--reviews" id="reviews">
       <div class="panel__inner panel__inner--wide">
         <h2>What Salt Lake says</h2>
-        <p class="reviews-intro">Short paraphrases of what guests often say on Google — thank you for rolling through.</p>
-        <div class="reviews-grid">
-          <figure class="review-card">
-            <blockquote class="review-card__quote">
-              <p>“Hands down some of the best donuts I’ve had in Salt Lake. Soft, flavorful, and you can taste that the ingredients are chosen with care.”</p>
-            </blockquote>
-            <figcaption class="review-card__cite">Paraphrased · Google</figcaption>
-          </figure>
-          <figure class="review-card">
-            <blockquote class="review-card__quote">
-              <p>“The old fashioned stopped me in my tracks — huge, perfect crumb, incredible flavor. Hard to believe it’s all dairy-free; we left with extras for the road.”</p>
-            </blockquote>
-            <figcaption class="review-card__cite">Paraphrased · Google</figcaption>
-          </figure>
-          <figure class="review-card">
-            <blockquote class="review-card__quote">
-              <p>“Kind people, cozy Sugar House energy, donuts worth building a weekly habit around. New flavors often — the glazed vanilla situation is dangerous in the best way.”</p>
-            </blockquote>
-            <figcaption class="review-card__cite">Paraphrased · Google</figcaption>
-          </figure>
+        <p class="reviews-intro"><span class="reviews-score" aria-label="4.8 out of 5 stars">★★★★★</span> <strong>4.8</strong> across 82 Google reviews. In guests’ own words — thank you for rolling through.</p>
+        <div class="rc" id="reviews-carousel" role="region" aria-roledescription="carousel" aria-label="Google reviews" tabindex="0">
+          <div class="rc__track" aria-live="off">
+            <figure class="rc__card"><blockquote class="rc__quote"><p>Hands down one of the best vegan donuts I've had</p></blockquote><figcaption class="rc__cite"><strong>Emmalie Pratt</strong><span>Google</span></figcaption></figure>
+          </div>
+          <div class="rc__bar">
+            <button type="button" class="rc__btn rc__btn--prev" aria-label="Previous reviews">‹</button>
+            <span class="rc__counter" aria-live="polite" aria-atomic="true"></span>
+            <button type="button" class="rc__btn rc__btn--next" aria-label="Next reviews">›</button>
+          </div>
         </div>
-        <a class="reviews-link" href="https://www.google.com/maps/search/Love+and+Light+Bakery+Salt+Lake+City+UT" target="_blank" rel="noopener noreferrer">Read more reviews on Google Maps →</a>
+        <a class="reviews-link" href="https://www.google.com/maps/place/Love+%26+Light+Bakery/@40.724066,-111.8603927,17z/data=!4m8!3m7!1s0x87528b6991714a73:0x2669ce0fddde7a25!8m2!3d40.724066!4d-111.8603927!9m1!1b1!16s%2Fg%2F11md36w9xj" target="_blank" rel="noopener noreferrer">Read all 82 reviews on Google Maps →</a>
       </div>
     </section>
 
@@ -512,5 +502,7 @@
   <script src="flavors.js?v=7"></script>
   <script src="hero-carousel.js?v=4"></script>
   <script src="machine.js?v=3"></script>
+  <script src="reviews-data.js?v=1"></script>
+  <script src="reviews.js?v=1"></script>
 </body>
 </html>
