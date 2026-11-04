@@ -1,761 +1,234 @@
+/* ===== Home scroll story =====
+   Native scrolling only — nothing here calls preventDefault. The page is tall
+   (.story-scroll); .story-pin sticks for the ride, and every visual is a pure
+   function of scroll position, smoothed with a short lerp:
+
+     track      four chapters slide horizontally, one viewport per chapter
+     donut      rolls the opposite way between chapters (donut-3d.js adds
+                lean + swell from the velocity this produces)
+     backdrop   chapter washes crossfade
+     sprinkles  drift at a slower rate (third parallax depth)
+     copy       eases in as its chapter arrives
+
+   Each chapter has a dwell (no horizontal motion) so it can be read, then a
+   travel. No snapping: the dwell is the rest.
+
+   Below 900px the chapters stack natively; the donut stays pinned and spins. */
 (function () {
-  const donut = document.getElementById("rolling-donut");
-  const stack = document.getElementById("stage-stack");
-  const orbs = document.querySelectorAll(".ambient__orb");
-  const body = document.body;
+  var donut = document.getElementById("rolling-donut");
+  var story = document.getElementById("story-scroll");
+  var track = document.getElementById("stage-stack");
+  if (!donut || !story || !track) return;
 
-  if (!donut || !stack) return;
+  var body = document.body;
+  var pin = story.querySelector(".story-pin");
+  var slides = Array.prototype.slice.call(track.querySelectorAll(".slide"));
+  var inners = slides.map(function (s) { return s.querySelector(".panel__inner"); });
+  var backdrops = Array.prototype.slice.call(document.querySelectorAll("#backdrop-stack .backdrop-slide"));
+  var orbs = Array.prototype.slice.call(document.querySelectorAll(".ambient__orb"));
+  var sprinkleField = null;
 
-  const slides = stack.querySelectorAll(".slide");
-  const backdropSlides = document.querySelectorAll("#backdrop-stack .backdrop-slide");
-  const slideCount = slides.length;
-  const numTrans = Math.max(1, slideCount - 1);
+  var count = slides.length;
+  var travels = Math.max(1, count - 1);
+  var prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /* ---- tuning ---- */
+  var MOBILE_MAX_PX = 899;
+  var SEGMENT_VH = 1.45;        // scroll distance per chapter, in viewport heights
+  var DWELL = 0.46;             // share of each segment with no horizontal motion (split both ends)
+  var SMOOTH = 0.11;            // lerp toward target each frame
+  var REVEAL_NEAR = 0.12;       // chapter-distance where copy is fully in
+  var REVEAL_FAR = 0.62;        // chapter-distance where copy is fully out
+  var DONUT_VISIBLE_FRAC = 0.44;
+  var ROLL_DEG_PER_CHAPTER = 540;
+  var MOBILE_ROT_PER_PX = 0.48;
+  var MOBILE_DRIFT_PER_PX = -0.06;
 
-  /** Below this width: normal document stack + fixed donut that only rotates with scroll. */
-  const MOBILE_STACK_MAX_PX = 899;
-  /** Scroll Y → donut rotation on mobile (deg per px). */
-  const MOBILE_SCROLL_ROT_PER_PX = 0.48;
+  var mode = null;              // "story" | "stack"
+  var pos = 0;                  // displayed chapter position (0 .. travels)
+  var posTarget = 0;
+  var rafId = null;
+  var pinW = 0;
+  var segmentPx = 0;
+  var mobileRaf = null;
+  var observer = null;
 
-  function mobileStackActive() {
-    return !prefersReduced && window.innerWidth <= MOBILE_STACK_MAX_PX;
+  function clamp(n, a, b) { return Math.min(b, Math.max(a, n)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function smooth(t) { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }
+
+  function isStoryWidth() {
+    return !prefersReduced && window.innerWidth > MOBILE_MAX_PX;
   }
 
-  /** Viewport heights of scroll per push→fade chapter (higher = more wheel travel per chapter). */
-  const SCROLL_STRETCH = 1.82;
-  /** Wheel delta dampening (higher = less physical scrolling to move). */
-  const WHEEL_MULTIPLIER = 0.52;
-  /** Touch drag scaling (same cap model as wheel; phones feel better slightly higher). */
-  const TOUCH_MULTIPLIER = 0.58;
-  /** currentY → targetY lerp (softer = smoother page motion). */
-  const SMOOTH_EASE = 0.056;
-  const SMOOTH_EASE_MID = 0.074;
-  const SMOOTH_EASE_FAR = 0.095;
-  /** targetY → chapter snap (first easing stage; lower = longer glide into next/prev stop). */
-  const SNAP_TARGET_EASE = 0.042;
-  /** Ignore tiny differences at rest. */
-  const SCROLL_EPS = 0.45;
+  /* Donut center-x when parked on the left vs right edge (44% of it stays on-screen). */
+  function parkX(side) {
+    var half = donut.getBoundingClientRect().width / 2;
+    if (half < 6) half = Math.min(window.innerWidth * 0.3, 300);
+    var visible = DONUT_VISIBLE_FRAC * 2 * half;
+    return side === "left" ? visible - half : window.innerWidth - visible + half;
+  }
+  function chapterSide(k) { return k % 2 === 0 ? "right" : "left"; }
 
-  let targetY = 0;
-  let currentY = 0;
-  let scrollSyncLock = false;
-  /** After the donut push, incoming copy fades by time — not by scroll position. */
-  let fadePhaseKey = null;
-  let fadeStartedAt = 0;
-  const TEXT_FADE_MS = 960;
-  /** Snap to chapter starts after wheel / touch — debounce so glide finishes before we pull to a stop. */
-  const WHEEL_SNAP_DEBOUNCE_MS = 260;
-  const SCROLL_SNAP_DEBOUNCE_MS = 340;
-  const AFTER_WHEEL_TOUCH_GUARD_MS = 400;
-
-  let wheelSnapTimer = null;
-  let scrollSnapTimer = null;
-  let lastWheelTime = 0;
-  /** Sum of raw wheel deltaY during the current gesture (sign = direction). */
-  let wheelIntentSum = 0;
-  /** Scroll position when the current wheel burst began (one chapter max per burst). */
-  let wheelGestureAnchor = null;
-  /** Accumulated wheel delta (after WHEEL_MULTIPLIER) for the current burst, capped to ±one chapter. */
-  let wheelAccumScaled = 0;
-  /** Touch: drive chapter scroll like wheel (preventDefault + capped delta); avoids native momentum fighting JS. */
-  let touchLastClientY = null;
-  let touchGestureAnchor = null;
-  let touchIntentSum = 0;
-  let touchAccumScaled = 0;
-  let touchChapterDriving = false;
-  /** Chapter px to ease toward (null = user drives targetY only). */
-  let pendingSnapY = null;
-  /** Mobile: donut center-x at right “peek”; avoid layout reads every scroll frame. */
-  let mobileDonutRightParkPx = null;
-  let mobileScrollVisualRaf = null;
-
-  function clamp(n, min, max) {
-    return Math.min(max, Math.max(min, n));
+  /* ---------- layout ---------- */
+  function layoutStory() {
+    var vh = window.innerHeight;
+    pinW = pin.clientWidth || window.innerWidth;
+    segmentPx = vh * SEGMENT_VH;
+    story.style.setProperty("--story-h", (travels * segmentPx + vh) + "px");
   }
 
-  function syncBackdropFromSlides() {
-    if (!backdropSlides.length) return;
+  function clearStory() {
+    story.style.removeProperty("--story-h");
+    track.style.removeProperty("--track-x");
+    slides.forEach(function (s) { s.inert = false; s.removeAttribute("aria-hidden"); });
+    inners.forEach(function (el) { if (el) { el.style.opacity = ""; el.style.transform = ""; } });
+    backdrops.forEach(function (b) { b.style.opacity = ""; });
+    orbs.forEach(function (o) { o.style.transform = ""; });
+    if (sprinkleField) sprinkleField.style.transform = "";
+  }
+
+  /* ---------- story mode ---------- */
+  function targetFromScroll() {
+    var raw = clamp(window.scrollY / Math.max(1, segmentPx), 0, travels);
+    var seg = Math.min(Math.floor(raw), travels - 1);
+    var u = raw - seg;
+    var half = DWELL / 2;
+    var t = smooth((u - half) / (1 - DWELL));
+    return seg + t;
+  }
+
+  function renderStory() {
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+
+    track.style.setProperty("--track-x", (-pos * pinW).toFixed(2) + "px");
+
     slides.forEach(function (slide, k) {
-      const bd = backdropSlides[k];
-      if (!bd) return;
-      bd.style.zIndex = slide.style.zIndex;
-      bd.style.opacity = slide.style.opacity;
-    });
-  }
-
-  function lerp(a, b, t) {
-    return a + (b - a) * t;
-  }
-
-  function smoothStep(t) {
-    const x = clamp(t, 0, 1);
-    return x * x * (3 - 2 * x);
-  }
-
-  function getMaxScroll() {
-    return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-  }
-
-  function chapterStepPx() {
-    return window.innerHeight * SCROLL_STRETCH;
-  }
-
-  function nearestChapterSnap(y) {
-    const step = chapterStepPx();
-    let best = 0;
-    let bestDist = Infinity;
-    for (let i = 0; i <= numTrans; i += 1) {
-      const p = i * step;
-      const d = Math.abs(y - p);
-      if (d < bestDist) {
-        bestDist = d;
-        best = p;
-      }
-    }
-    return best;
-  }
-
-  /**
-   * Pick lower or upper chapter boundary between y lives.
-   * Avoids "nearest" snapping backward when the user nudged downward but not far enough.
-   */
-  function intentAwareChapterSnap(y, wheelIntent) {
-    const step = chapterStepPx();
-    const max = getMaxScroll();
-    if (y < 14) {
-      return 0;
-    }
-    if (y > max - 14) {
-      return max;
-    }
-
-    const lower = clamp(Math.floor(y / step) * step, 0, max);
-    const upper = clamp(Math.min(lower + step, numTrans * step), 0, max);
-    const span = upper - lower;
-    if (span < 2) {
-      return lower;
-    }
-
-    const t = (y - lower) / span;
-    const INTENT_GATE = 10;
-
-    if (Math.abs(wheelIntent) < INTENT_GATE) {
-      if (t >= 0.52) {
-        return upper;
-      }
-      if (t <= 0.48) {
-        return lower;
-      }
-      return t > 0.22 ? upper : lower;
-    }
-
-    if (wheelIntent > 0) {
-      return t > 0.07 ? upper : lower;
-    }
-
-    return t < 0.93 ? lower : upper;
-  }
-
-  /**
-   * Strong wheel / swipe: snap to exactly the next or previous chapter stop (no skipping).
-   * Matches common scroll-story UX (one full-page step per gesture).
-   */
-  function adjacentChapterSnap(y, wheelIntent) {
-    const step = chapterStepPx();
-    const max = getMaxScroll();
-    const yy = clamp(y, 0, max);
-
-    if (wheelIntent > 0 && yy >= max - 14) {
-      return max;
-    }
-    if (wheelIntent < 0 && yy <= 14) {
-      return 0;
-    }
-
-    const idx = Math.min(Math.floor(yy / step + 1e-9), numTrans);
-
-    if (wheelIntent > 0) {
-      if (idx >= numTrans) {
-        return max;
-      }
-      return (idx + 1) * step;
-    }
-
-    if (idx <= 0) {
-      return 0;
-    }
-    return (idx - 1) * step;
-  }
-
-  /** Fraction of donut width (diameter) kept visible when parked on an edge. */
-  const DONUT_VISIBLE_FRAC = 0.44;
-
-  /**
-   * Center-x when donut is parked on the left vs right edge.
-   * ~44% of the donut width stays on-screen; the rest sits past the edge.
-   */
-  function getDonutPeekBounds(vw) {
-    const rect = donut.getBoundingClientRect();
-    let half = rect.width / 2;
-    if (half < 6) {
-      half = Math.min(vw * 0.27, 202);
-    }
-    const visibleW = DONUT_VISIBLE_FRAC * (2 * half);
-    return {
-      leftPark: visibleW - half,
-      rightPark: vw - visibleW + half,
-    };
-  }
-
-  /**
-   * Begin a smooth glide to a chapter stop (targetY eases in, then currentY follows).
-   * Pass wheelIntent from wheel; omit wheelIntent for resize and use forceChapterSnap instead.
-   */
-  /**
-   * @param {number} fromY - scroll Y used for weak-intent / scroll settle (usually targetY).
-   * @param {number} [wheelIntent] - accumulated wheel delta; omit for resize / programmatic.
-   * @param {number} [wheelAnchor] - scroll Y at wheel burst start; strong snaps use this so one gesture = one chapter.
-   */
-  function requestChapterSnap(fromY, wheelIntent, wheelAnchor) {
-    const max = getMaxScroll();
-    const INTENT_STRONG = 10;
-    let pick;
-    if (wheelIntent === undefined) {
-      pick = nearestChapterSnap(fromY);
-    } else if (Math.abs(wheelIntent) >= INTENT_STRONG && wheelAnchor != null) {
-      pick = adjacentChapterSnap(wheelAnchor, wheelIntent);
-    } else if (Math.abs(wheelIntent) >= INTENT_STRONG) {
-      pick = adjacentChapterSnap(fromY, wheelIntent);
-    } else {
-      pick = intentAwareChapterSnap(fromY, wheelIntent);
-    }
-    const snap = clamp(pick, 0, max);
-    if (
-      Math.abs(snap - fromY) < 1.25 &&
-      Math.abs(snap - targetY) < 1.25 &&
-      pendingSnapY === null
-    ) {
-      return;
-    }
-    pendingSnapY = snap;
-  }
-
-  function forceChapterSnap(fromY) {
-    pendingSnapY = null;
-    const max = getMaxScroll();
-    const snap = clamp(nearestChapterSnap(fromY), 0, max);
-    targetY = snap;
-    currentY = snap;
-    scrollSyncLock = true;
-    window.scrollTo(0, snap);
-    scrollSyncLock = false;
-  }
-
-  function recacheMobileDonutX() {
-    if (!mobileStackActive()) {
-      mobileDonutRightParkPx = null;
-      return;
-    }
-    mobileDonutRightParkPx = getDonutPeekBounds(window.innerWidth).rightPark;
-  }
-
-  function setScrollMetrics() {
-    body.style.setProperty("--slide-count", String(slideCount));
-    if (prefersReduced) {
-      body.classList.remove("is-push-stage");
-      body.classList.remove("is-mobile-stack");
-      body.style.minHeight = "";
-      mobileDonutRightParkPx = null;
-      return;
-    }
-    if (mobileStackActive()) {
-      body.classList.remove("is-push-stage");
-      body.classList.add("is-mobile-stack");
-      body.style.minHeight = "";
-      recacheMobileDonutX();
-      return;
-    }
-    mobileDonutRightParkPx = null;
-    body.classList.remove("is-mobile-stack");
-    body.classList.add("is-push-stage");
-    const vh = window.innerHeight;
-    const segmentPx = vh * SCROLL_STRETCH;
-    const totalPx = numTrans * segmentPx + vh;
-    body.style.minHeight = `${totalPx}px`;
-  }
-
-  function resetSlidesStacked() {
-    slides.forEach(function (slide) {
-      const inner = slide.querySelector(".panel__inner");
-      slide.style.zIndex = "";
-      slide.style.opacity = "";
-      slide.style.pointerEvents = "";
+      var d = Math.abs(k - pos);
+      var reveal = 1 - clamp((d - REVEAL_NEAR) / (REVEAL_FAR - REVEAL_NEAR), 0, 1);
+      var inner = inners[k];
       if (inner) {
-        inner.style.transform = "";
-        inner.style.opacity = "";
+        inner.style.opacity = reveal.toFixed(3);
+        inner.style.transform = "translate3d(0, " + ((1 - reveal) * 30).toFixed(2) + "px, 0) scale(" + (0.985 + reveal * 0.015).toFixed(4) + ")";
       }
+      var away = d > 0.98;
+      if (slide.inert !== away) slide.inert = away;
+      if (away) slide.setAttribute("aria-hidden", "true"); else slide.removeAttribute("aria-hidden");
+      if (backdrops[k]) backdrops[k].style.opacity = (1 - clamp(d, 0, 1)).toFixed(3);
     });
-    if (backdropSlides.length) {
-      backdropSlides.forEach(function (bd) {
-        bd.style.zIndex = "";
-        bd.style.opacity = "";
-      });
-    }
-  }
 
-  function updateMobileDonutFromScroll() {
-    if (mobileDonutRightParkPx == null) {
-      recacheMobileDonutX();
-    }
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const scrollY = window.scrollY;
-    const maxScroll = Math.max(1, getMaxScroll());
-    if (mobileDonutRightParkPx != null) {
-      donut.style.setProperty("--donut-x", `${mobileDonutRightParkPx}px`);
-    }
-    donut.style.setProperty("--donut-rot", `${scrollY * MOBILE_SCROLL_ROT_PER_PX}deg`);
-    if (orbs.length) {
-      const p = clamp(scrollY / maxScroll, 0, 1);
-      const drift = p * vw * 0.08;
-      orbs[0].style.transform = `translate3d(${drift * 0.6}px, ${p * vh * 0.04}px, 0)`;
-      orbs[1].style.transform = `translate3d(${-drift * 0.5}px, ${p * vh * 0.05}px, 0)`;
-      orbs[2].style.transform = `translate3d(${drift * 0.35}px, ${-p * vh * 0.02}px, 0)`;
-    }
-  }
+    /* Donut: between chapters it crosses from one park to the other, rolling as it goes. */
+    var seg = Math.min(Math.floor(pos), travels - 1);
+    var f = clamp(pos - seg, 0, 1);
+    var x = lerp(parkX(chapterSide(seg)), parkX(chapterSide(seg + 1)), f);
+    var rot = 0;
+    for (var i = 0; i < seg; i += 1) rot += (i % 2 === 0 ? -1 : 1) * ROLL_DEG_PER_CHAPTER;
+    rot += (seg % 2 === 0 ? -1 : 1) * ROLL_DEG_PER_CHAPTER * f;
+    donut.style.setProperty("--donut-x", x.toFixed(2) + "px");
+    donut.style.setProperty("--donut-rot", rot.toFixed(2) + "deg");
 
-  function scheduleMobileScrollVisuals() {
-    if (mobileScrollVisualRaf !== null) {
-      return;
-    }
-    mobileScrollVisualRaf = window.requestAnimationFrame(function () {
-      mobileScrollVisualRaf = null;
-      updateMobileDonutFromScroll();
-    });
-  }
-
-  function update() {
-    if (prefersReduced || mobileStackActive()) {
-      return;
-    }
-    const vh = window.innerHeight;
-    const vw = window.innerWidth;
-    const scrollY = window.scrollY;
-    const maxScroll = Math.max(1, getMaxScroll());
-    const segmentHeight = vh * SCROLL_STRETCH;
-
-    const raw = scrollY / Math.max(1e-6, segmentHeight);
-    const dir = function (seg) {
-      return seg % 2 === 0 ? -1 : 1;
-    };
-
-    if (raw >= numTrans) {
-      fadePhaseKey = null;
-      slides.forEach(function (slide, k) {
-        const inner = slide.querySelector(".panel__inner");
-        slide.style.zIndex = k === slideCount - 1 ? "8" : "2";
-        slide.style.opacity = k === slideCount - 1 ? "1" : "0";
-        slide.style.pointerEvents = k === slideCount - 1 ? "auto" : "none";
-        if (inner) {
-          inner.style.transform = "";
-          inner.style.opacity = "1";
-        }
-      });
-      syncBackdropFromSlides();
-
-      const lastSeg = numTrans - 1;
-      const rollRight = lastSeg % 2 === 0;
-      const park = getDonutPeekBounds(vw);
-      const settledX = rollRight ? park.leftPark : park.rightPark;
-      donut.style.setProperty("--donut-x", `${settledX}px`);
-      let rotSettled = 0;
-      for (let i = 0; i < numTrans; i += 1) {
-        rotSettled += i % 2 === 0 ? -720 : 720;
-      }
-      donut.style.setProperty("--donut-rot", `${rotSettled}deg`);
-
-      if (orbs.length) {
-        const p = clamp(scrollY / maxScroll, 0, 1);
-        const drift = p * vw * 0.08;
-        orbs[0].style.transform = `translate3d(${drift * 0.6}px, ${p * vh * 0.04}px, 0)`;
-        orbs[1].style.transform = `translate3d(${-drift * 0.5}px, ${p * vh * 0.05}px, 0)`;
-        orbs[2].style.transform = `translate3d(${drift * 0.35}px, ${-p * vh * 0.02}px, 0)`;
-      }
-      return;
-    }
-
-    const seg = Math.floor(raw);
-    const u = raw - seg;
-    const pushT = clamp(u / 0.5, 0, 1);
-    const pushE = smoothStep(pushT);
-    const pushPx = vw * 0.78 + 140;
-    const d = dir(seg);
-
-    let fadeIn = 0;
-    if (u < 0.5) {
-      fadePhaseKey = null;
-    } else {
-      const key = String(seg);
-      if (fadePhaseKey !== key) {
-        fadePhaseKey = key;
-        fadeStartedAt = performance.now();
-      }
-      const fadeT = clamp((performance.now() - fadeStartedAt) / TEXT_FADE_MS, 0, 1);
-      fadeIn = smoothStep(fadeT);
-    }
-
-    slides.forEach(function (slide, k) {
-      const inner = slide.querySelector(".panel__inner");
-      if (!inner) return;
-
-      if (k < seg) {
-        slide.style.zIndex = "2";
-        slide.style.opacity = "0";
-        slide.style.pointerEvents = "none";
-        inner.style.transform = "translate3d(0, 0, 0)";
-        inner.style.opacity = "1";
-      } else if (k === seg) {
-        if (u < 0.5) {
-          const dist = pushPx * pushE;
-          slide.style.zIndex = "8";
-          slide.style.opacity = "1";
-          slide.style.pointerEvents = "auto";
-          inner.style.transform = `translate3d(${d * dist}px, 0, 0)`;
-          inner.style.opacity = "1";
-        } else {
-          slide.style.zIndex = "3";
-          slide.style.opacity = "0";
-          slide.style.pointerEvents = "none";
-          inner.style.transform = `translate3d(${d * pushPx}px, 0, 0)`;
-          inner.style.opacity = "0";
-        }
-      } else if (k === seg + 1) {
-        if (u < 0.5) {
-          slide.style.zIndex = "4";
-          slide.style.opacity = "0";
-          slide.style.pointerEvents = "none";
-          inner.style.transform = "translate3d(0, 0, 0)";
-          inner.style.opacity = "0";
-        } else {
-          slide.style.zIndex = "9";
-          slide.style.opacity = "1";
-          slide.style.pointerEvents = fadeIn > 0.12 ? "auto" : "none";
-          const lift = (1 - fadeIn) * 14;
-          inner.style.transform = `translate3d(0, ${lift}px, 0)`;
-          inner.style.opacity = String(fadeIn);
-        }
-      } else {
-        slide.style.zIndex = "2";
-        slide.style.opacity = "0";
-        slide.style.pointerEvents = "none";
-        inner.style.transform = "translate3d(0, 0, 0)";
-        inner.style.opacity = "1";
-      }
-    });
-    syncBackdropFromSlides();
-
-    const park = getDonutPeekBounds(vw);
-    if (u < 0.5) {
-      const rollRight = seg % 2 === 0;
-      const startX = rollRight ? park.rightPark : park.leftPark;
-      const endX = rollRight ? park.leftPark : park.rightPark;
-      const x = lerp(startX, endX, pushE);
-      donut.style.setProperty("--donut-x", `${x}px`);
-
-      let rotAccum = 0;
-      for (let i = 0; i < seg; i += 1) {
-        rotAccum += i % 2 === 0 ? -720 : 720;
-      }
-      rotAccum += (seg % 2 === 0 ? -720 : 720) * pushE;
-      donut.style.setProperty("--donut-rot", `${rotAccum}deg`);
-    } else {
-      const rollRight = seg % 2 === 0;
-      const endX = rollRight ? park.leftPark : park.rightPark;
-      donut.style.setProperty("--donut-x", `${endX}px`);
-      let rotAccum = 0;
-      for (let i = 0; i <= seg; i += 1) {
-        rotAccum += i % 2 === 0 ? -720 : 720;
-      }
-      donut.style.setProperty("--donut-rot", `${rotAccum}deg`);
-    }
-
-    if (orbs.length) {
-      const p = clamp(scrollY / maxScroll, 0, 1);
-      const drift = p * vw * 0.08;
-      orbs[0].style.transform = `translate3d(${drift * 0.6}px, ${p * vh * 0.04}px, 0)`;
-      orbs[1].style.transform = `translate3d(${-drift * 0.5}px, ${p * vh * 0.05}px, 0)`;
-      orbs[2].style.transform = `translate3d(${drift * 0.35}px, ${-p * vh * 0.02}px, 0)`;
-    }
-  }
-
-  function resetTouchGesture() {
-    touchLastClientY = null;
-    touchGestureAnchor = null;
-    touchIntentSum = 0;
-    touchAccumScaled = 0;
-    touchChapterDriving = false;
-  }
-
-  function touchShouldUseChapterScroll(e) {
-    const t = e.target;
-    if (t.closest("a, button, input, textarea, select, label")) {
-      return false;
-    }
-    const slide = t.closest(".slide");
-    if (slide && slide.scrollHeight > slide.clientHeight + 12) {
-      return false;
-    }
-    return true;
-  }
-
-  function syncScrollFromNative() {
-    if (touchChapterDriving) {
-      return;
-    }
-    if (pendingSnapY !== null) {
-      return;
-    }
-    const y = window.scrollY;
-    if (Math.abs(y - currentY) <= 14) {
-      return;
-    }
-    pendingSnapY = null;
-    const step = chapterStepPx();
-    const max = getMaxScroll();
-    const lo = clamp(currentY - step, 0, max);
-    const hi = clamp(currentY + step, 0, max);
-    const clampedY = clamp(y, lo, hi);
-    if (Math.abs(clampedY - y) > 0.5) {
-      scrollSyncLock = true;
-      window.scrollTo(0, clampedY);
-      scrollSyncLock = false;
-    }
-    currentY = clampedY;
-    targetY = clampedY;
+    /* Slow layers. */
+    var p = pos / travels;
+    var drift = p * vw * 0.08;
+    if (orbs[0]) orbs[0].style.transform = "translate3d(" + (drift * 0.6).toFixed(1) + "px, " + (p * vh * 0.04).toFixed(1) + "px, 0)";
+    if (orbs[1]) orbs[1].style.transform = "translate3d(" + (-drift * 0.5).toFixed(1) + "px, " + (p * vh * 0.05).toFixed(1) + "px, 0)";
+    if (orbs[2]) orbs[2].style.transform = "translate3d(" + (drift * 0.35).toFixed(1) + "px, " + (-p * vh * 0.02).toFixed(1) + "px, 0)";
+    if (!sprinkleField) sprinkleField = document.querySelector(".sprinkle-field");
+    if (sprinkleField) sprinkleField.style.transform = "translate3d(" + (-pos * vw * 0.07).toFixed(1) + "px, 0, 0)";
   }
 
   function frame() {
-    if (prefersReduced || mobileStackActive()) {
-      return;
+    rafId = null;
+    posTarget = targetFromScroll();
+    var diff = posTarget - pos;
+    if (Math.abs(diff) < 0.0004) {
+      pos = posTarget;
+      renderStory();
+      return; // settled; next scroll event wakes us
     }
-    const max = getMaxScroll();
-    if (pendingSnapY !== null) {
-      pendingSnapY = clamp(pendingSnapY, 0, max);
-      targetY += (pendingSnapY - targetY) * SNAP_TARGET_EASE;
-      if (Math.abs(pendingSnapY - targetY) < 0.55) {
-        targetY = pendingSnapY;
-        pendingSnapY = null;
-      }
-    }
-    targetY = clamp(targetY, 0, max);
-    const dist = Math.abs(targetY - currentY);
-    const ease = dist > 110 ? SMOOTH_EASE_FAR : dist > 48 ? SMOOTH_EASE_MID : SMOOTH_EASE;
-    currentY += (targetY - currentY) * ease;
-    if (Math.abs(targetY - currentY) < SCROLL_EPS) {
-      currentY = targetY;
-    }
-    if (Math.abs(window.scrollY - currentY) > 0.35) {
-      scrollSyncLock = true;
-      window.scrollTo(0, currentY);
-      scrollSyncLock = false;
-    }
-    update();
-    window.requestAnimationFrame(frame);
+    pos += diff * SMOOTH;
+    renderStory();
+    rafId = window.requestAnimationFrame(frame);
   }
 
-  setScrollMetrics();
-  targetY = currentY = window.scrollY;
+  function wake() {
+    if (rafId === null) rafId = window.requestAnimationFrame(frame);
+  }
 
-  window.addEventListener("resize", function () {
-    const wasMobileStack = body.classList.contains("is-mobile-stack");
-    setScrollMetrics();
+  /* ---------- stacked (phone / tablet) mode ---------- */
+  function renderStack() {
+    mobileRaf = null;
+    var y = window.scrollY;
+    donut.style.setProperty("--donut-x", parkX("right").toFixed(2) + "px");
+    donut.style.setProperty("--donut-rot", (y * MOBILE_ROT_PER_PX).toFixed(2) + "deg");
+    donut.style.setProperty("--donut-y", clamp(y * MOBILE_DRIFT_PER_PX, -140, 0).toFixed(1) + "px");
+  }
+
+  function wakeStack() {
+    if (mobileRaf === null) mobileRaf = window.requestAnimationFrame(renderStack);
+  }
+
+  function observeStack() {
+    if (observer || !("IntersectionObserver" in window)) {
+      if (!observer) inners.forEach(function (el) { if (el) el.classList.add("is-in"); });
+      return;
+    }
+    observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          en.target.classList.add("is-in");
+          observer.unobserve(en.target);
+        }
+      });
+    }, { rootMargin: "0px 0px -12% 0px", threshold: 0.12 });
+    inners.forEach(function (el) { if (el) observer.observe(el); });
+  }
+
+  /* ---------- mode switching ---------- */
+  function setMode(next) {
+    if (next === mode) return;
+    mode = next;
+    body.style.setProperty("--slide-count", String(count));
     if (prefersReduced) {
+      body.classList.remove("is-push-stage", "is-mobile-stack");
+      clearStory();
       return;
     }
-    if (mobileStackActive()) {
-      resetSlidesStacked();
-      recacheMobileDonutX();
-      const maxM = getMaxScroll();
-      scrollSyncLock = true;
-      window.scrollTo(0, clamp(window.scrollY, 0, maxM));
-      scrollSyncLock = false;
-      updateMobileDonutFromScroll();
-      return;
+    if (mode === "story") {
+      body.classList.add("is-push-stage");
+      body.classList.remove("is-mobile-stack");
+      donut.style.removeProperty("--donut-y");
+      inners.forEach(function (el) { if (el) el.classList.remove("is-in"); });
+      layoutStory();
+      pos = posTarget = targetFromScroll();
+      renderStory();
+    } else {
+      body.classList.add("is-mobile-stack");
+      body.classList.remove("is-push-stage");
+      clearStory();
+      observeStack();
+      renderStack();
     }
-    const max = getMaxScroll();
-    targetY = clamp(targetY, 0, max);
-    currentY = clamp(currentY, 0, max);
-    scrollSyncLock = true;
-    window.scrollTo(0, clamp(window.scrollY, 0, max));
-    scrollSyncLock = false;
-    forceChapterSnap(window.scrollY);
-    targetY = currentY = window.scrollY;
-    update();
-    if (wasMobileStack) {
-      window.requestAnimationFrame(frame);
-    }
-  });
-
-  if (prefersReduced) {
-    return;
   }
 
-  if (mobileStackActive()) {
-    resetSlidesStacked();
-    window.requestAnimationFrame(function () {
-      recacheMobileDonutX();
-      updateMobileDonutFromScroll();
-    });
-  } else {
-    window.requestAnimationFrame(frame);
+  function onResize() {
+    var next = prefersReduced ? "reduced" : (isStoryWidth() ? "story" : "stack");
+    if (next !== mode) { setMode(next); return; }
+    if (mode === "story") { layoutStory(); pos = posTarget = targetFromScroll(); renderStory(); }
+    else if (mode === "stack") renderStack();
   }
 
-  window.addEventListener(
-    "wheel",
-    function (e) {
-      if (mobileStackActive()) {
-        return;
-      }
-      e.preventDefault();
-      lastWheelTime = performance.now();
-      pendingSnapY = null;
-      wheelIntentSum += e.deltaY;
-
-      const step = chapterStepPx();
-      const max = getMaxScroll();
-      if (wheelGestureAnchor === null) {
-        wheelGestureAnchor = currentY;
-        wheelAccumScaled = 0;
-      }
-      wheelAccumScaled += e.deltaY * WHEEL_MULTIPLIER;
-      const capped = clamp(wheelAccumScaled, -step, step);
-      targetY = clamp(wheelGestureAnchor + capped, 0, max);
-
-      clearTimeout(wheelSnapTimer);
-      wheelSnapTimer = setTimeout(function () {
-        wheelSnapTimer = null;
-        const intent = wheelIntentSum;
-        const anchorForSnap = wheelGestureAnchor;
-        wheelIntentSum = 0;
-        wheelGestureAnchor = null;
-        wheelAccumScaled = 0;
-        requestChapterSnap(targetY, intent, anchorForSnap);
-      }, WHEEL_SNAP_DEBOUNCE_MS);
-    },
-    { passive: false }
-  );
-
-  window.addEventListener(
-    "touchstart",
-    function (e) {
-      if (mobileStackActive()) {
-        return;
-      }
-      if (e.touches.length !== 1) {
-        resetTouchGesture();
-        return;
-      }
-      if (!touchShouldUseChapterScroll(e)) {
-        resetTouchGesture();
-        return;
-      }
-      pendingSnapY = null;
-      lastWheelTime = performance.now();
-      touchChapterDriving = true;
-      touchLastClientY = e.touches[0].clientY;
-      touchGestureAnchor = currentY;
-      touchIntentSum = 0;
-      touchAccumScaled = 0;
-    },
-    { passive: true }
-  );
-
-  window.addEventListener(
-    "touchmove",
-    function (e) {
-      if (mobileStackActive()) {
-        return;
-      }
-      if (!touchChapterDriving || touchGestureAnchor === null || e.touches.length !== 1) {
-        return;
-      }
-      if (!touchShouldUseChapterScroll(e)) {
-        resetTouchGesture();
-        return;
-      }
-      e.preventDefault();
-      lastWheelTime = performance.now();
-      pendingSnapY = null;
-      const y = e.touches[0].clientY;
-      const dy = touchLastClientY - y;
-      touchLastClientY = y;
-      touchIntentSum += dy;
-
-      const step = chapterStepPx();
-      const max = getMaxScroll();
-      touchAccumScaled += dy * TOUCH_MULTIPLIER;
-      const capped = clamp(touchAccumScaled, -step, step);
-      targetY = clamp(touchGestureAnchor + capped, 0, max);
-    },
-    { passive: false }
-  );
-
-  window.addEventListener(
-    "touchend",
-    function () {
-      if (mobileStackActive()) {
-        return;
-      }
-      if (!touchChapterDriving || touchGestureAnchor === null) {
-        return;
-      }
-      const intent = touchIntentSum;
-      const anchorForSnap = touchGestureAnchor;
-      resetTouchGesture();
-      lastWheelTime = performance.now();
-      requestChapterSnap(targetY, intent, anchorForSnap);
-    },
-    { passive: true }
-  );
-
-  window.addEventListener("touchcancel", resetTouchGesture, { passive: true });
-
-  window.addEventListener(
-    "scroll",
-    function () {
-      if (scrollSyncLock) return;
-      if (mobileStackActive()) {
-        scheduleMobileScrollVisuals();
-        return;
-      }
-      syncScrollFromNative();
-      clearTimeout(scrollSnapTimer);
-      scrollSnapTimer = setTimeout(function () {
-        scrollSnapTimer = null;
-        if (performance.now() - lastWheelTime < AFTER_WHEEL_TOUCH_GUARD_MS) {
-          return;
-        }
-        if (pendingSnapY !== null) {
-          return;
-        }
-        requestChapterSnap(window.scrollY, 0);
-      }, SCROLL_SNAP_DEBOUNCE_MS);
-    },
-    { passive: true }
-  );
-
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener(
-      "resize",
-      function () {
-        if (prefersReduced || !mobileStackActive()) {
-          return;
-        }
-        recacheMobileDonutX();
-        scheduleMobileScrollVisuals();
-      },
-      { passive: true }
-    );
+  function onScroll() {
+    if (mode === "story") wake();
+    else if (mode === "stack") wakeStack();
   }
+
+  if ("scrollRestoration" in history) history.scrollRestoration = "auto";
+
+  setMode(prefersReduced ? "reduced" : (isStoryWidth() ? "story" : "stack"));
+  window.addEventListener("resize", onResize);
+  window.addEventListener("scroll", onScroll, { passive: true });
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", onResize, { passive: true });
+  window.addEventListener("load", onResize);
 })();
