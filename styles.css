@@ -675,7 +675,9 @@ body.page--home .top-bar--open {
 }
 
 /* Playful “coming soon” chip (replaces online order link until Square is live) */
-.cta-soon {
+.cta-order {
+  text-decoration: none;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -691,8 +693,8 @@ body.page--home .top-bar--open {
     #ffe8f4 100%
   );
   background-size: 220% 220%;
-  animation: cta-soon-gradient 9s ease-in-out infinite;
-  border: 2px dashed rgba(193, 123, 110, 0.55);
+  animation: cta-order-gradient 9s ease-in-out infinite;
+  border: 2px solid rgba(193, 123, 110, 0.55);
   box-shadow:
     0 8px 28px rgba(232, 155, 196, 0.22),
     0 2px 0 rgba(255, 255, 255, 0.65) inset;
@@ -706,7 +708,7 @@ body.page--home .top-bar--open {
   isolation: isolate;
 }
 
-.cta-soon::before {
+.cta-order::before {
   content: "";
   position: absolute;
   inset: -3px;
@@ -718,11 +720,11 @@ body.page--home .top-bar--open {
   pointer-events: none;
 }
 
-.cta-soon__main {
+.cta-order__main {
   letter-spacing: -0.02em;
 }
 
-.cta-soon__badge {
+.cta-order__badge {
   display: inline-flex;
   align-items: center;
   padding: 0.28rem 0.75rem;
@@ -736,21 +738,21 @@ body.page--home .top-bar--open {
   text-transform: uppercase;
   transform: rotate(2deg);
   box-shadow: 0 3px 10px rgba(44, 36, 32, 0.2);
-  animation: cta-soon-badge 2.8s ease-in-out infinite;
+  animation: cta-order-badge 2.8s ease-in-out infinite;
 }
 
-.cta-soon__spark {
+.cta-order__spark {
   font-size: 1rem;
   line-height: 1;
   opacity: 0.92;
-  animation: cta-soon-spark 2.2s ease-in-out infinite;
+  animation: cta-order-spark 2.2s ease-in-out infinite;
 }
 
-.cta-soon__spark:last-of-type {
+.cta-order__spark:last-of-type {
   animation-delay: 0.5s;
 }
 
-@keyframes cta-soon-gradient {
+@keyframes cta-order-gradient {
   0%,
   100% {
     background-position: 0% 40%;
@@ -760,7 +762,7 @@ body.page--home .top-bar--open {
   }
 }
 
-@keyframes cta-soon-badge {
+@keyframes cta-order-badge {
   0%,
   100% {
     transform: rotate(2deg) translateY(0);
@@ -770,7 +772,7 @@ body.page--home .top-bar--open {
   }
 }
 
-@keyframes cta-soon-spark {
+@keyframes cta-order-spark {
   0%,
   100% {
     transform: scale(1) rotate(-6deg);
@@ -2580,19 +2582,19 @@ body.page--inner {
     transition: none;
   }
 
-  .cta-soon,
-  .cta-soon__badge,
-  .cta-soon__spark {
+  .cta-order,
+  .cta-order__badge,
+  .cta-order__spark {
     animation: none !important;
   }
 
-  .cta-soon {
+  .cta-order {
     transform: none;
     background-position: 0 0;
     background-size: 100% 100%;
   }
 
-  .cta-soon__badge {
+  .cta-order__badge {
     transform: none;
   }
 
@@ -2644,4 +2646,15 @@ body.page--inner {
   .hof-card:hover::after {
     animation: none;
   }
+}
+
+/* Order chip is a real link to the Square pickup page */
+.cta-order:hover,
+.cta-order:focus-visible {
+  transform: rotate(-1.25deg) translateY(-2px);
+  filter: brightness(1.04);
+}
+.cta-order:focus-visible {
+  outline: 3px solid #1c1a1f;
+  outline-offset: 3px;
 }
