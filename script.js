@@ -11,7 +11,8 @@
      copy       eases in as its chapter arrives
 
    Each chapter has a dwell (no horizontal motion) so it can be read, then a
-   travel. No snapping: the dwell is the rest.
+   travel. If scrolling stops partway through a travel, the page glides to the
+   nearest chapter so the story never rests between two chapters.
 
    Below 900px the chapters stack natively; the donut stays pinned and spins. */
 (function () {
@@ -47,6 +48,8 @@
   var HERO_Y_VH = -0.05;        // opening donut sits a touch above center (shelf runs along the bottom)
   var INTRO_MS = 1700;          // roll-in from off-screen on first paint
   var INTRO_ROLL_DEG = 420;
+  var SNAP_IDLE_MS = 140;       // quiet time after the last scroll event before snapping
+  var SNAP_DEADBAND = 0.03;     // chapter-distance treated as "already parked"
   var MOBILE_ROT_PER_PX = 0.48;
   var MOBILE_DRIFT_PER_PX = -0.06;
 
@@ -60,6 +63,8 @@
   var observer = null;
   var introDone = false;
   var introStart = null;        // performance.now() when the roll-in began, null when done/skipped
+  var snapTimer = null;
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function clamp(n, a, b) { return Math.min(b, Math.max(a, n)); }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -195,6 +200,30 @@
     if (rafId === null) rafId = window.requestAnimationFrame(frame);
   }
 
+  /* Snap: once scrolling goes quiet mid-travel, glide to the nearest chapter.
+     Native smooth scroll keeps firing scroll events, so the timer simply
+     re-arms until the glide ends inside a dwell, where there is nothing to do. */
+  function nearestChapterScroll() {
+    var raw = clamp(window.scrollY / Math.max(1, segmentPx), 0, travels);
+    var seg = Math.min(Math.floor(raw), travels - 1);
+    var u = raw - seg;
+    var half = DWELL / 2;
+    var t = (u - half) / (1 - DWELL);
+    if (t <= SNAP_DEADBAND || t >= 1 - SNAP_DEADBAND) return null;
+    return Math.round((t < 0.5 ? seg : seg + 1) * segmentPx);
+  }
+  function maybeSnap() {
+    snapTimer = null;
+    if (mode !== "story" || introStart !== null) return;
+    var want = nearestChapterScroll();
+    if (want === null || Math.abs(want - window.scrollY) < 1) return;
+    window.scrollTo({ top: want, behavior: reduceMotion ? "auto" : "smooth" });
+  }
+  function armSnap() {
+    if (snapTimer !== null) window.clearTimeout(snapTimer);
+    snapTimer = window.setTimeout(maybeSnap, SNAP_IDLE_MS);
+  }
+
   /* ---------- stacked (phone / tablet) mode ---------- */
   function renderStack() {
     mobileRaf = null;
@@ -264,7 +293,7 @@
   }
 
   function onScroll() {
-    if (mode === "story") wake();
+    if (mode === "story") { wake(); armSnap(); }
     else if (mode === "stack") wakeStack();
   }
 
