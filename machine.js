@@ -60,7 +60,9 @@
     name.textContent = f.name;
     desc.textContent = f.desc;
     price.textContent = priceFor(f);
-
+    try {
+      document.dispatchEvent(new CustomEvent("llb:flavor", { detail: { index: i, name: f.name } }));
+    } catch (err) { /* very old browsers: the card simply keeps its own art */ }
   }
 
   /* Title reveal: fires once, when the section header has scrolled into view. */

@@ -351,7 +351,15 @@ body.page--home .top-bar--open {
   margin-left: calc(var(--donut-size) / -2);
   perspective: 1100px;
   will-change: left;
+  transition: opacity 0.4s ease;
 }
+
+/* Desktop: the rolling donut comes in front of the chapters while it lands on,
+   sits in, and rides out with the flavor card. */
+body.is-donut-front .donut-stage { z-index: 4; }
+
+/* The card shows a flavor other than the Homer: its own art takes the stage. */
+.donut.is-handed-off { opacity: 0; }
 
 /* Soft contact shadow sits under the whole object and grows as the donut swells toward you. */
 .donut__shadow {
@@ -2224,6 +2232,13 @@ body.page--inner {
 .machine__pick-stage .llb-donut {
   width: 176px;
   height: 176px;
+  transition: opacity 0.3s ease;
+}
+
+/* Desktop with the Homer picked: the rolling donut is sitting here, so the flat art steps aside. */
+body.is-donut-docked .machine__pick-stage .llb-donut {
+  opacity: 0;
+  animation: none;
 }
 
 .machine__pick-stage.is-swapping .llb-donut {

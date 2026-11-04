@@ -41,7 +41,8 @@
   var REVEAL_NEAR = 0.12;       // chapter-distance where copy is fully in
   var REVEAL_FAR = 0.62;        // chapter-distance where copy is fully out
   var DONUT_VISIBLE_FRAC = 0.44;
-  var PEEK_VISIBLE_FRAC = 0.16;
+  var DOCK_PX = 208;            // box size of the donut once it sits in the flavor card (disc is ~72% of it)
+  var FRONT_AT = 0.4;           // chapter-distance into the hero→menu roll where the donut comes in front of the copy
   var ROLL_DEG_PER_CHAPTER = 540;
   var HERO_MAG_MIN = 1.2;       // giant opening donut, as a multiple of --donut-size
   var HERO_MAG_MAX = 1.75;
@@ -82,8 +83,32 @@
     return side === "left" ? visible - half : window.innerWidth - visible + half;
   }
   function chapterSide(k) { return k % 2 === 0 ? "right" : "left"; }
-  /* The flavor machine (chapter 1) needs its width: the donut only peeks in from the edge there. */
-  function chapterPark(k) { return parkX(chapterSide(k), k === 1 ? PEEK_VISIBLE_FRAC : DONUT_VISIBLE_FRAC); }
+  function chapterPark(k) { return parkX(chapterSide(k), DONUT_VISIBLE_FRAC); }
+  /* Roll direction per crossing: hero→card (left), card→chapter 2 re-entry (left), then alternating. */
+  function segRoll(i) { return (i === 1 || i % 2 === 0) ? -ROLL_DEG_PER_CHAPTER : ROLL_DEG_PER_CHAPTER; }
+
+  /* Chapter 1: the donut lands in the flavor card's stage and becomes the Homer.
+     Dock position is measured live (relative to the pin) and corrected for the
+     track offset, so it is where the stage will be once chapter 1 is parked. */
+  var dockEl = document.getElementById("machine-pick-stage");
+  var flavorIdx = 0;            // flavor shown on the card; 0 is the Homer, which the rolling donut plays
+  var frontOn = false;
+  var handedOff = false;
+  var dockedOn = false;
+  function dockTarget() {
+    if (!dockEl) return { x: parkX("left", 0.16), y: 0, ok: false };
+    var r = dockEl.getBoundingClientRect();
+    var s = pin.getBoundingClientRect();
+    return {
+      x: r.left + r.width / 2 - s.left + (pos - 1) * pinW,
+      y: r.top + r.height / 2 - (s.top + s.height / 2) - 7, /* the contact shadow hangs below, so sit a touch high */
+      ok: r.width > 0
+    };
+  }
+  function setFlag(el, cls, on, cur) {
+    if (on !== cur) el.classList.toggle(cls, on);
+    return on;
+  }
   function easeOutCubic(t) { t = clamp(t, 0, 1); return 1 - Math.pow(1 - t, 3); }
 
   /* Opening chapter: the donut is huge and hangs off the right edge beside the copy column. */
@@ -110,6 +135,9 @@
     story.style.removeProperty("--story-h");
     track.style.removeProperty("--track-x");
     donut.style.removeProperty("--donut-mag");
+    frontOn = setFlag(body, "is-donut-front", false, frontOn);
+    handedOff = setFlag(donut, "is-handed-off", false, handedOff);
+    dockedOn = setFlag(body, "is-donut-docked", false, dockedOn);
     introStart = null;
     inners.forEach(function (el) { if (el) { el.style.opacity = ""; el.style.transform = ""; } });
     backdrops.forEach(function (b) { b.style.opacity = ""; });
@@ -149,20 +177,49 @@
     var seg = Math.min(Math.floor(pos), travels - 1);
     var f = clamp(pos - seg, 0, 1);
     var mag0 = heroMag();
-    var from = seg === 0 ? heroX(mag0) : chapterPark(seg);
-    var x = lerp(from, chapterPark(seg + 1), f);
-    var mag = seg === 0 ? lerp(mag0, 1, f) : 1;
-    var y = seg === 0 ? lerp(HERO_Y_VH * vh, 0, f) : 0;
+    var base = donut.getBoundingClientRect().width || 600;
+    var dk = dockTarget();
+    var dockMag = dk.ok ? DOCK_PX / base : 1;
+    /* Share of the card→chapter-2 segment during which the donut rides out with the card. */
+    var exitF = dk.ok ? clamp((dk.x + dockMag * base * 0.62) / Math.max(1, pinW), 0.05, 0.6) : 0;
+    var x, y, mag, front = false;
     var rot = 0;
-    for (var i = 0; i < seg; i += 1) rot += (i % 2 === 0 ? -1 : 1) * ROLL_DEG_PER_CHAPTER;
-    rot += (seg % 2 === 0 ? -1 : 1) * ROLL_DEG_PER_CHAPTER * f;
+    for (var i = 0; i < seg; i += 1) rot += segRoll(i);
+    if (seg === 0) {
+      /* Giant hero donut rolls in and shrinks onto the card's stage (the stage itself is still sliding in). */
+      x = lerp(heroX(mag0), dk.x + (1 - pos) * pinW, f);
+      y = lerp(HERO_Y_VH * vh, dk.ok ? dk.y : 0, f);
+      mag = lerp(mag0, dockMag, f);
+      rot += segRoll(0) * f;
+      front = dk.ok && f >= FRONT_AT;
+    } else if (seg === 1 && dk.ok && f < exitF) {
+      /* Sitting on the card: carried off the left edge with it. */
+      x = dk.x - f * pinW;
+      y = dk.y;
+      mag = dockMag;
+      front = true;
+    } else if (seg === 1 && dk.ok) {
+      /* ...then rolls back in from the right for chapter 2. */
+      var g = (f - exitF) / (1 - exitF);
+      x = lerp(vw + base * 0.75, chapterPark(2), g);
+      y = 0;
+      mag = 1;
+      rot += segRoll(1) * g;
+    } else {
+      x = lerp(chapterPark(seg), chapterPark(seg + 1), f);
+      y = 0;
+      mag = 1;
+      rot += segRoll(seg) * f;
+    }
+    frontOn = setFlag(body, "is-donut-front", front, frontOn);
+    handedOff = setFlag(donut, "is-handed-off", dk.ok && flavorIdx !== 0 && pos > 0.55 && pos < 1 + exitF, handedOff);
 
     /* First paint: roll in from past the right edge, fading out once the visitor scrolls. */
     if (introStart !== null) {
       var e = easeOutCubic((performance.now() - introStart) / INTRO_MS);
       var w = (1 - e) * (1 - clamp(pos * 3, 0, 1));
       if (e >= 1) introStart = null;
-      x += w * (vw + mag0 * (donut.getBoundingClientRect().width || 600) * 0.6 - heroX(mag0));
+      x += w * (vw + mag0 * base * 0.6 - heroX(mag0));
       rot -= w * INTRO_ROLL_DEG;
     }
 
@@ -266,6 +323,7 @@
     if (mode === "story") {
       body.classList.add("is-push-stage");
       body.classList.remove("is-mobile-stack");
+      dockedOn = setFlag(body, "is-donut-docked", flavorIdx === 0, dockedOn);
       donut.style.removeProperty("--donut-y");
       inners.forEach(function (el) { if (el) el.classList.remove("is-in"); });
       layoutStory();
@@ -320,6 +378,16 @@
     if (Math.abs(targetFromScroll() - k) > 0.02) {
       window.scrollTo(0, want);
       wake();
+    }
+  });
+
+  /* The flavor card tells us what it shows. The rolling donut plays the Homer (flavor 0);
+     any other pick hands the card's stage back to its own illustration. */
+  document.addEventListener("llb:flavor", function (e) {
+    flavorIdx = e.detail && typeof e.detail.index === "number" ? e.detail.index : 0;
+    if (mode === "story") {
+      dockedOn = setFlag(body, "is-donut-docked", flavorIdx === 0, dockedOn);
+      renderStory();
     }
   });
 
