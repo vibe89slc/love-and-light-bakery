@@ -5,7 +5,7 @@
   --ink: #2c2420;
   --ink-soft: rgba(44, 36, 32, 0.72);
   --accent: #c17b6e;
-  --donut-size: min(54vw, 400px);
+  --donut-size: min(70vw, 480px);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --slide-count: 4;
 }
@@ -475,6 +475,55 @@ body.page--home .top-bar--open {
 
 .panel--hero h1 {
   line-height: 1.2;
+}
+
+/* Skip link: hidden until focused. */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--cream);
+  font-weight: 500;
+  text-decoration: none;
+  transform: translateY(-200%);
+  opacity: 0;
+  transition: transform 0.2s var(--ease-out), opacity 0.2s ease;
+}
+
+.skip-link:focus {
+  transform: none;
+  opacity: 1;
+  outline: 2px solid var(--cream);
+  outline-offset: -5px;
+}
+
+main:focus {
+  outline: none;
+}
+
+/* Shared focus ring for links and controls that don't define their own. */
+.cta:focus-visible,
+.reviews-link:focus-visible,
+.panel a:focus-visible,
+.page-main a:focus-visible,
+.hero-carousel__nav:focus-visible,
+.flavor-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.hero-carousel__nav:focus-visible {
+  border-radius: 999px;
+}
+
+.hero-carousel__dot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
 .visually-hidden {
@@ -2270,7 +2319,7 @@ body.page--inner {
   box-shadow: 0 10px 24px rgba(44, 36, 32, 0.1);
 }
 
-.machine__btn[aria-pressed="true"] {
+.machine__btn[aria-checked="true"] {
   background: #fff;
   transform: translateY(-3px);
   box-shadow:
@@ -2356,7 +2405,7 @@ body.page--inner {
   }
 
   /* While the card is stuck the top bar slides away to give the wall the room. */
-  body.is-machine-stuck .top-bar:not(.top-bar--open) {
+  body.is-machine-stuck .top-bar:not(.top-bar--open):not(:focus-within) {
     transform: translateY(-120%);
     opacity: 0;
   }

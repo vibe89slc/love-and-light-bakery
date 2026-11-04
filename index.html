@@ -27,9 +27,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=14" />
+  <link rel="stylesheet" href="styles.css?v=16" />
 </head>
 <body class="page--home">
+  <a class="skip-link" href="#stage-stack">Skip to content</a>
   <div class="ambient" aria-hidden="true">
     <div class="ambient__orb ambient__orb--1"></div>
     <div class="ambient__orb ambient__orb--2"></div>
@@ -311,7 +312,7 @@
       </div>
     </div>
     </div>
-    <main class="stage-stack" id="stage-stack">
+    <main class="stage-stack" id="stage-stack" tabindex="-1">
     <section class="slide panel panel--hero" id="hero">
       <div class="panel__inner">
         <p class="eyebrow">Your local doughnut dealer</p>
@@ -383,10 +384,10 @@
         <p class="hero-carousel__eyebrow">Fresh from the case</p>
         <div class="hero-carousel__viewport">
           <button class="hero-carousel__nav hero-carousel__nav--prev" type="button" aria-label="Previous flavor">‹</button>
-          <div class="hero-carousel__track" id="hero-carousel-track"></div>
+          <div class="hero-carousel__track" id="hero-carousel-track" aria-hidden="true"></div>
           <button class="hero-carousel__nav hero-carousel__nav--next" type="button" aria-label="Next flavor">›</button>
         </div>
-        <p class="hero-carousel__caption" id="hero-carousel-caption" aria-live="polite"></p>
+        <p class="hero-carousel__caption" id="hero-carousel-caption" role="tabpanel" aria-live="polite" aria-atomic="true"></p>
         <div class="hero-carousel__dots" id="hero-carousel-dots" role="tablist" aria-label="Choose a flavor"></div>
         <div class="scroll-hint">
           <span class="scroll-hint__line"></span>
@@ -413,7 +414,7 @@
               <a class="cta cta--button" href="menu.html">Full menu &amp; espresso bar</a>
             </div>
           </article>
-          <div class="machine__grid" id="machine-grid" aria-label="Flavors"></div>
+          <div class="machine__grid" id="machine-grid" role="radiogroup" aria-label="Choose a flavor to read about"></div>
         </div>
         <noscript>
           <p class="hof-noscript">Our flavor lineup: Homer, Maple Cinnamon Crumb, Lemon Poppyseed, Boston Cream, Blueberry Buttercream, Cookie Butter, Vanilla Twist, Strawberry Cinnamon Crumb, S’mores, Raspberry Jelly Bismarck, Apple Fritter, Classic Donut Holes, Strawberry Glazed, Maple, Old-Fashioned Donut Holes, Chocolate Old-Fashioned, Chocolate Coconut, Old-Fashioned Churro, Classic Twist, Vanilla Glazed, Classic Glazed, Old-Fashioned, Sugar, and Sugar Twist. See the <a href="menu.html">full menu</a>.</p>
@@ -497,11 +498,11 @@
 
   <script src="nav.js"></script>
   <script src="decor.js?v=1"></script>
-  <script src="script.js?v=6"></script>
+  <script src="script.js?v=7"></script>
   <script src="donut-3d.js?v=3"></script>
   <script src="flavors.js?v=7"></script>
-  <script src="hero-carousel.js?v=4"></script>
-  <script src="machine.js?v=4"></script>
+  <script src="hero-carousel.js?v=5"></script>
+  <script src="machine.js?v=6"></script>
   <script src="reviews-data.js?v=1"></script>
   <script src="reviews.js?v=1"></script>
 </body>

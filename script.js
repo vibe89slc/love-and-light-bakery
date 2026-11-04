@@ -106,7 +106,6 @@
     track.style.removeProperty("--track-x");
     donut.style.removeProperty("--donut-mag");
     introStart = null;
-    slides.forEach(function (s) { s.inert = false; s.removeAttribute("aria-hidden"); });
     inners.forEach(function (el) { if (el) { el.style.opacity = ""; el.style.transform = ""; } });
     backdrops.forEach(function (b) { b.style.opacity = ""; });
     orbs.forEach(function (o) { o.style.transform = ""; });
@@ -137,9 +136,6 @@
         inner.style.opacity = reveal.toFixed(3);
         inner.style.transform = "translate3d(0, " + ((1 - reveal) * 30).toFixed(2) + "px, 0) scale(" + (0.985 + reveal * 0.015).toFixed(4) + ")";
       }
-      var away = d > 0.98;
-      if (slide.inert !== away) slide.inert = away;
-      if (away) slide.setAttribute("aria-hidden", "true"); else slide.removeAttribute("aria-hidden");
       if (backdrops[k]) backdrops[k].style.opacity = (1 - clamp(d, 0, 1)).toFixed(3);
     });
 
@@ -273,6 +269,30 @@
   }
 
   if ("scrollRestoration" in history) history.scrollRestoration = "auto";
+
+  /* Keyboard: tabbing into another chapter scrolls the page to that chapter, so
+     focus is never on something off-screen. The browser also tries to reveal the
+     focused element by scrolling the (overflow: hidden) pin itself; undo that. */
+  function chapterOf(el) {
+    for (var k = 0; k < slides.length; k += 1) if (slides[k].contains(el)) return k;
+    return -1;
+  }
+  function resetPinScroll() {
+    if (pin.scrollLeft) pin.scrollLeft = 0;
+    if (pin.scrollTop) pin.scrollTop = 0;
+  }
+  pin.addEventListener("scroll", resetPinScroll, { passive: true });
+  track.addEventListener("focusin", function (e) {
+    if (mode !== "story") return;
+    resetPinScroll();
+    var k = chapterOf(e.target);
+    if (k < 0) return;
+    var want = Math.round(k * segmentPx);
+    if (Math.abs(targetFromScroll() - k) > 0.02) {
+      window.scrollTo(0, want);
+      wake();
+    }
+  });
 
   setMode(prefersReduced ? "reduced" : (isStoryWidth() ? "story" : "stack"));
   window.addEventListener("resize", onResize);

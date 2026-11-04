@@ -30,8 +30,12 @@
     b.type = "button";
     b.className = "machine__btn";
     b.style.cssText = window.LLB.flavorVars(f);
-    b.setAttribute("aria-pressed", "false");
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", "false");
+    b.tabIndex = -1; // the checked flavor is the group's single tab stop
     b.innerHTML = window.LLB.donutSVG(f, i, "mk") + '<span class="machine__btn-name">' + f.name + "</span>";
+    var art = b.querySelector("svg");
+    if (art) { art.setAttribute("aria-hidden", "true"); art.removeAttribute("role"); art.removeAttribute("aria-label"); }
     b.addEventListener("click", function () { select(i, true); });
     grid.appendChild(b);
     return b;
@@ -41,7 +45,10 @@
     if (i === active) return;
     active = i;
     var f = flavors[i];
-    buttons.forEach(function (b, k) { b.setAttribute("aria-pressed", k === i ? "true" : "false"); });
+    buttons.forEach(function (b, k) {
+      b.setAttribute("aria-checked", k === i ? "true" : "false");
+      b.tabIndex = k === i ? 0 : -1;
+    });
     pick.style.cssText = window.LLB.flavorVars(f);
     stage.innerHTML = window.LLB.donutSVG(f, i, "pick");
     if (!reduce) {
@@ -104,6 +111,8 @@
     else if (e.key === "ArrowLeft") next = idx - 1;
     else if (e.key === "ArrowDown") next = idx + cols;
     else if (e.key === "ArrowUp") next = idx - cols;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = buttons.length - 1;
     if (next === null) return;
     e.preventDefault();
     next = Math.max(0, Math.min(buttons.length - 1, next));
@@ -112,4 +121,7 @@
   });
 
   select(0, false);
+  /* Announce later changes only, not the first render. */
+  pick.setAttribute("aria-live", "polite");
+  pick.setAttribute("aria-atomic", "true");
 })();

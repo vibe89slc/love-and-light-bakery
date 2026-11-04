@@ -39,9 +39,24 @@
     dot.className = "hero-carousel__dot";
     dot.setAttribute("role", "tab");
     dot.setAttribute("aria-label", f.name);
+    dot.setAttribute("aria-controls", "hero-carousel-caption");
+    dot.tabIndex = i === 0 ? 0 : -1; // one tab stop; arrows move between flavors
     dot.addEventListener("click", function () {
       go(i);
       restart();
+    });
+    dot.addEventListener("keydown", function (e) {
+      var n = flavors.length;
+      var target = null;
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") target = active + 1;
+      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") target = active - 1;
+      else if (e.key === "Home") target = 0;
+      else if (e.key === "End") target = n - 1;
+      if (target === null) return;
+      e.preventDefault();
+      go(target);
+      restart();
+      dots[active].focus();
     });
     dotsWrap.appendChild(dot);
     return dot;
@@ -70,6 +85,7 @@
     dots.forEach(function (dot, i) {
       dot.classList.toggle("is-active", i === active);
       dot.setAttribute("aria-selected", i === active ? "true" : "false");
+      dot.tabIndex = i === active ? 0 : -1;
     });
     var f = flavors[active];
     caption.innerHTML =
